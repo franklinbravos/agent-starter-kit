@@ -92,6 +92,7 @@ Skills codify procedures that personas reference. They answer "how to do X" so p
 - **contextualizer-self-review** — TRACE self-review rubric — context generation quality gate
 - **dispatch** — how the Maestro assembles and sends work to personas
 - **loop-recovery** — structured recovery and escalation for retry loops
+- **message-queue** — file-based FIFO queue for deferring user input during mid-task dispatch
 - **review-loop** — LOC-based review tier selection with shapeshifter dispatch
 - **reviewer-architect-adversarial** — adversarial plan validation and assumption attack
 - **reviewer-handoff** — structured review summary format with verdict logic

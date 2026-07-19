@@ -36,7 +36,7 @@ All framework files live under `.agents/`. Markdown references within the framew
      - Re-read `personas/maestro.md` from the top so updated instructions take effect.
    - If already up to date, continue.
 
-3. **Memory.** Load memory (uses: `skills/agent-memory.md`).
+3. **Memory.** Ensure `.memory/queue/` exists by running `mkdir -p .memory/queue`. Load memory (uses: `skills/agent-memory.md`).
 
 4. **CLI configuration.** Run:
 
