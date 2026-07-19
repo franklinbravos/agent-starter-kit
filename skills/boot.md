@@ -36,9 +36,36 @@ All framework files live under `.agents/`. Markdown references within the framew
      - Re-read `personas/maestro.md` from the top so updated instructions take effect.
    - If already up to date, continue.
 
-3. **Memory.** Ensure `.memory/queue/` exists by running `mkdir -p .memory/queue`. Load memory (uses: `skills/agent-memory.md`).
+3. **Fork version check.** Read the `VERSION` file in `.agents/` to get the current fork version. Then check whether the upstream remote (`ntorga/agent-starter-kit`) is configured. Run:
 
-4. **CLI configuration.** Run:
+   ```bash
+   git -C .agents remote get-url upstream 2>/dev/null || echo "MISSING"
+   ```
+
+   - **If upstream is configured:** Fetch upstream and compare versions by diffing the CHANGELOG headers:
+
+     ```bash
+     git -C .agents fetch upstream 2>/dev/null
+     upstream_version=$(git -C .agents log upstream/main --oneline -1 --format="%s" 2>/dev/null)
+     fork_version=$(git -C .agents log origin/main --oneline -1 --format="%s" 2>/dev/null)
+     behind=$(git -C .agents rev-list --count origin/main..upstream/main 2>/dev/null)
+     if [ "$behind" -gt 0 ]; then
+       echo "Fork is $behind commit(s) behind upstream (ntorga/agent-starter-kit)."
+       echo "Latest upstream: $upstream_version"
+       echo "To merge: git -C .agents pull upstream main"
+     fi
+     ```
+
+   - **If upstream is missing:** Suggest adding it:
+
+     ```bash
+     echo "Note: upstream remote not configured. To receive updates from the original starter kit, run:"
+     echo "  git -C .agents remote add upstream git@github.com:ntorga/agent-starter-kit.git"
+     ```
+
+4. **Memory.** Ensure `.memory/queue/` exists by running `mkdir -p .memory/queue`. Load memory (uses: `skills/agent-memory.md`).
+
+5. **CLI configuration.** Run:
 
    ```bash
    bash .agents/skills/assets/maestro-boot-configure-cli.sh <your-model-id>
@@ -51,9 +78,9 @@ All framework files live under `.agents/`. Markdown references within the framew
     - If `yq` or `jq` is not installed, the script prints a skip message — no action needed.
     - If no supported CLI config file is found, the script exits silently — no action needed.
 
-5. **Load the rules index.** Read `rules/README.md` to know what rules are available and their scopes. Do not read the individual rule files — sub-agents will read them when dispatched.
+6. **Load the rules index.** Read `rules/README.md` to know what rules are available and their scopes. Do not read the individual rule files — sub-agents will read them when dispatched.
 
-6. **Context.** Verify the project has context files. Run:
+7. **Context.** Verify the project has context files. Run:
 
    ```bash
    find . -name ".context.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" -not -path "*/.cache/*" -print -quit
@@ -61,7 +88,7 @@ All framework files live under `.agents/`. Markdown references within the framew
 
     - If `find` produces no output, no `.context.md` files exist. Dispatch the **Contextualizer** (uses: `personas/contextualizer.md`) before proceeding.
 
-7. **Greet.** Greet the user and wait for instructions. Remind the user: they are not talking to a single agent — they are talking to a team of specialists that can handle multiple requests simultaneously, so large and complex prompts are welcome.
+8. **Greet.** Greet the user and wait for instructions. Announce the current fork version (read from `VERSION` file). Remind the user: they are not talking to a single agent — they are talking to a team of specialists that can handle multiple requests simultaneously, so large and complex prompts are welcome.
 
 ## Guardrails
 

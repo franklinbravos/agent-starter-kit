@@ -1,5 +1,8 @@
 # AGENTS.md
 
+**Fork:** franklinbravos/agent-starter-kit — version tracked in `VERSION`.
+**Original:** [ntorga/agent-starter-kit](https://github.com/ntorga/agent-starter-kit).
+
 A style book for code that reads itself. Internalize the reasoning, apply the judgment, write code that the next reader can follow without reverse-engineering.
 
 ## Code Shape
