@@ -32,10 +32,27 @@ The framework **learns as it works**. Corrections, preferences, and lessons are 
 
    ```bash
    cd /path/to/your/project
-   git clone git@github.com:ntorga/agent-starter-kit.git .agents
+   git clone git@github.com:franklinbravos/agent-starter-kit.git .agents
    ```
 
 The `.agents/` directory lives inside your project — it's not a plugin you install once. Each project gets its own copy of the framework.
+
+### Why this fork?
+
+This fork extends the original [ntorga/agent-starter-kit](https://github.com/ntorga/agent-starter-kit) with a **message queue system** that makes the Maestro resilient to user messages sent while it is mid-task. The original kit processes messages synchronously — anything you type while the agent is waiting for a sub-agent corrupts the session. This fork adds a FIFO queue (`.agents/skills/message-queue.md`) that defers non-urgent messages and handles `/force` interruptions cleanly.
+
+Differences from upstream:
+- **`skills/message-queue.md`** — file-based FIFO queue with mid-task semaphore, collation-resistant naming, `/force` command support, and stress-tested edge cases
+- **`personas/maestro.md`** — updated playbook with queue-aware steps 0 (check), 5 (mark), 7 (clear), 8 (sweep)
+- **`skills/boot.md`** — initializes `.memory/queue/` during session startup
+- **`skills/agent-memory.md`** — logs queue events to session memory
+
+To pull upstream changes while keeping the queue additions:
+```bash
+git remote add upstream git@github.com:ntorga/agent-starter-kit.git
+git pull upstream main --no-rebase
+# Resolve conflicts on the 4 modified files if needed
+```
 
 2. Symlink the entry file to the project root:
 
