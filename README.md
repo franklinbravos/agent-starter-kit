@@ -47,12 +47,16 @@ Differences from upstream:
 - **`skills/boot.md`** — initializes `.memory/queue/` during session startup
 - **`skills/agent-memory.md`** — logs queue events to session memory
 
-To pull upstream changes while keeping the queue additions:
+To keep this fork in sync with upstream (the merge preserves the fork additions):
 ```bash
-git remote add upstream git@github.com:ntorga/agent-starter-kit.git
-git pull upstream main --no-rebase
-# Resolve conflicts on the 4 modified files if needed
+git remote add upstream https://github.com/ntorga/agent-starter-kit.git
+git fetch upstream
+git merge upstream/main --no-ff
+# Resolve any conflicts if they arise — fork-side changes (message queue,
+# version tracking, fork attribution) take precedence; never drop them.
 ```
+
+After merging, record the sync in the same logical change: add a `chore(sync)` entry to `CHANGELOG.md` and bump `VERSION` (plus `forkVersion` in `ENTRYPOINT.md`) — the fork's version tracking and boot upstream check depend on those being in step.
 
 2. Symlink the entry file to the project root:
 
