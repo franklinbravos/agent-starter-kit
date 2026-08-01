@@ -1,6 +1,10 @@
 # Changelog
 
 ```log
+0.2.0 - 2026/07/31
+chore(sync): merge upstream ntorga/agent-starter-kit 0.9.9 — pick up AGENTS.md additions (Honesty and Ambiguity, 3am-stranger Readability directive, Style Proximity, Review Trust, Native Tooling, Frontend, Hardcoding, Dependency Audit, Schema Changes, single-letter ban, no-else exception, branch prefix guidance), CHANGELOG 0.9.8/0.9.9 entries, README comply-phrase fix; fork additions (message queue, VERSION tracking, fork attribution) kept intact
+chore(version): bump fork VERSION to 0.2.0 to track the upstream sync
+
 0.9.9 - 2026/07/24
 refactor(agents): add audience-directive block to Readability Over Performance — frame the compiler as syntax validator (already solved) and the 3am stranger as the audience; rewrite Comments Are a Signal as confession-not-tool with restructure-first default and demonstrate-the-attempt requirement; widen Locality of Behavior to cover sole-caller helpers (nested when trivial wrapping, method on same type when real transformation logic); reframe Naming preamble to restructure-before-comment
 feat(agents): add Honesty and Ambiguity section — say so when a request is flawed, proceed on reversible actions, stop only for destructive/irreversible, escalate with structure for non-obvious trade-offs

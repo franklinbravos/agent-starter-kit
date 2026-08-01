@@ -1,7 +1,7 @@
 ---
 readWhen: always
 description: Entrypoint for AI agents — full orchestration boot. Read this when you want the Maestro.
-forkVersion: 0.1.0
+forkVersion: 0.2.0
 upstream: https://github.com/ntorga/agent-starter-kit
 ---
 
