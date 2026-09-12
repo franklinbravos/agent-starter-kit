@@ -1,15 +1,15 @@
 ---
 shortDescription: Debugging methodology — root cause before fix, strike limits, anti-rationalization.
 scope: coding
-version: 0.0.1
-lastUpdated: 2026-03-25
+version: 0.0.2
+lastUpdated: 2026-09-12
 ---
 
 ## Statement
 
 ### Root Cause First
 
-Coders MUST NOT propose or apply a fix before completing a root cause investigation. Reading error messages, reproducing the failure, checking recent changes, and tracing the data flow to the origin — these are mandatory before any code change. Treating symptoms instead of causes wastes time and creates new bugs.
+You MUST NOT propose or apply a fix before completing a root cause investigation. Reading error messages, reproducing the failure, checking recent changes, and tracing the data flow to the origin — these are mandatory before any code change. Treating symptoms instead of causes wastes time and creates new bugs.
 
 ### One Fix at a Time
 
@@ -17,7 +17,7 @@ Each fix attempt MUST be a single, isolated change. Bundling multiple fixes in o
 
 ### The Three-Strike Rule
 
-After three failed fix attempts for the same issue, the coder MUST stop and question whether the approach is fundamentally wrong. Three failures is strong evidence of an architectural problem, a misunderstood requirement, or missing context. In interactive sessions, the coder MUST NOT attempt a fourth fix without explicit user direction — present what was tried, why each attempt failed, and what alternatives exist. In non-interactive dispatches, follow the loop-recovery skill (`skills/loop-recovery.md`) which provides the escalation path.
+After three failed fix attempts for the same issue, you MUST stop and question whether the approach is fundamentally wrong. Three failures is strong evidence of an architectural problem, a misunderstood requirement, or missing context. You MUST NOT attempt a fourth fix without explicit user direction. Present what was tried, why each attempt failed, and what alternatives exist. In non-interactive dispatches, follow the loop-recovery skill (`skills/loop-recovery/SKILL.md`) which provides the escalation path.
 
 ### Anti-Rationalization
 
@@ -32,7 +32,7 @@ The following rationalizations MUST be treated as red flags that trigger a retur
 
 ### Compare Before Fixing
 
-When a pattern or integration is broken, coders SHOULD locate a working example of the same pattern in the codebase and compare it against the broken version before proposing changes. The difference between working and broken code is often more informative than the error message.
+When a pattern or integration is broken, you SHOULD locate a working example of the same pattern in the codebase and compare it against the broken version before proposing changes. The difference between working and broken code is often more informative than the error message.
 
 ## Rationale
 

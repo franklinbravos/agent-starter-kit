@@ -9,10 +9,10 @@
 # by adding a resolve<Name>ConfigPath function and updating resolveSupportedCliConfigPath.
 #
 # @usage        maestro-boot-configure-cli.sh
-# @output       Summary line with agent count, or nothing if no CLI config found.
+# @output       Summary line with agent count and configStatus, or nothing if no CLI config found.
 # @requires     bash v4+, yq v4+, jq v1.6+, ps
-# @version      0.6.14
-# @updated      2026-07-09
+# @version      0.7.0
+# @updated      2026-09-12
 #
 # ── Thinking/Reasoning Configuration ─────────────────────────────────────────
 #
@@ -25,16 +25,25 @@
 #     - `--thinking` CLI flag forces thinking ON, overriding config
 #
 #   OpenAI-compatible SDK (@ai-sdk/openai-compatible):
-#     - Uses "reasoning" field: {effort: "low"|"medium"|"high"|"xhigh"}
+#     - Uses "reasoning" field: {effort: "low"|"medium"|"high"|"xhigh"|"max"}
 #     - Also emits "reasoningEffort" (flat) for opencode pass-through compatibility
 #     - Config-level thinking IS respected by `opencode run`
 #
 # Humor → Thinking Budget → Effort Mapping:
-#   robotic     → budget=4096  → thinking.type=enabled,  reasoning.effort=low,  reasoningEffort=low
-#   introvert   → budget=8192  → thinking.type=enabled,  reasoning.effort=low,  reasoningEffort=low
-#   pragmatic   → budget=12288 → thinking.type=enabled,  reasoning.effort=medium, reasoningEffort=medium
-#   sympathetic → budget=14336 → thinking.type=enabled,  reasoning.effort=high, reasoningEffort=high
-#   extrovert   → budget=16384 → thinking.type=enabled,  reasoning.effort=xhigh, reasoningEffort=xhigh
+#   robotic     → budget=6144  → thinking.type=enabled,  reasoning.effort=medium, reasoningEffort=medium
+#   introvert   → budget=8192  → thinking.type=enabled,  reasoning.effort=high,   reasoningEffort=high
+#   pragmatic   → budget=12288 → thinking.type=enabled,  reasoning.effort=xhigh,  reasoningEffort=xhigh
+#   sympathetic → budget=14336 → thinking.type=enabled,  reasoning.effort=max,    reasoningEffort=max
+#   extrovert   → budget=16384 → thinking.type=enabled,  reasoning.effort=max,    reasoningEffort=max
+#
+# ── Host Model Selection ─────────────────────────────────────────────────────
+#
+# Personas with `preferredModel: host` get an agent binding WITHOUT a model
+# field. OpenCode routes these agents to whatever model the user selected in
+# the TUI at session start — the binding follows the live selection instead of
+# freezing a stale value. The maestro persona uses the `build` agent name.
+# OpenCode keeps `build` as the visible primary agent and hides all other
+# generated persona agents as subagents.
 #
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -98,7 +107,9 @@ resolveSupportedCliConfigPath() {
     echo "opencode.json existed"
     return 0
   fi
-  echo '{"$schema": "https://opencode.ai/config.json", "agent": {"plan": {"disable": true}}}' > opencode.json
+  cat <<'EOF' > opencode.json
+{"$schema": "https://opencode.ai/config.json", "agent": {"plan": {"disable": true}}}
+EOF
   echo "opencode.json created"
   return 0
 }
@@ -110,21 +121,8 @@ readPersonaFrontmatter() {
 
 readProvidersYamlBlock() {
   local dispatchMdPath
-  dispatchMdPath="$(resolveScriptDir)/../dispatch.md"
+  dispatchMdPath="$(resolveScriptDir)/../dispatch/SKILL.md"
   awk '/^## Providers$/{inProviders=1; next} /^## /{inProviders=0} inProviders && /^```yaml$/{inBlock=1; next} inBlock && /^```$/{exit} inBlock{print}' "$dispatchMdPath"
-}
-
-resolveSupportedCliProviderName() {
-  local hostModelId="${1:-}"
-  local supportedCliProviderKey=""
-  if [ -n "$hostModelId" ]; then
-    supportedCliProviderKey=$(readProvidersYamlBlock | yq ".providers | to_entries[] | select(.value | has(\"tier-1\", \"tier-2\", \"tier-3\") and (.value.\"tier-1\" == \"$hostModelId\" or .value.\"tier-2\" == \"$hostModelId\" or .value.\"tier-3\" == \"$hostModelId\")) | .key // \"\"" 2>/dev/null | head -1 || true)
-  fi
-  if [ -z "$supportedCliProviderKey" ]; then
-    supportedCliProviderKey=$(readProvidersYamlBlock | yq '.providers | to_entries[] | select(.value.cli == "opencode") | .key // ""' 2>/dev/null | head -1 || true)
-  fi
-  echo "$supportedCliProviderKey"
-  return 0
 }
 
 isProviderOnSupportedCli() {
@@ -138,14 +136,13 @@ isProviderOnSupportedCli() {
   echo "false"
 }
 
-resolveHostProviderName() {
-  local hostModelId="${1:-$hostModelId}"
-  if [ "${resolveHostProviderNameEnvOverride+set}" = "set" ]; then
-    echo "$resolveHostProviderNameEnvOverride"
+shouldSkipDispatch() {
+  local preferredModel="$1"
+  if [ "$preferredModel" = "host" ] || [ -z "$preferredModel" ]; then
+    echo "true"
     return 0
   fi
-
-  resolveSupportedCliProviderName "$hostModelId"
+  echo "false"
 }
 
 resolveProviderModelId() {
@@ -164,28 +161,20 @@ resolveProviderModelId() {
   return 0
 }
 
+readPersonaPreferredModel() {
+  local personaPath="$1"
+  readPersonaFrontmatter "$personaPath" | yq '.preferredModel // "host"'
+}
+
 resolvePersonaModelId() {
   local personaPath="$1"
 
-  local frontmatterYaml preferredModelValue modelTierValue providerName resolvedModelString
+  local frontmatterYaml preferredModelValue modelTierValue resolvedModelString
   frontmatterYaml=$(readPersonaFrontmatter "$personaPath")
   preferredModelValue=$(echo "$frontmatterYaml" | yq '.preferredModel // ""')
 
-  if [ -z "$preferredModelValue" ]; then
+  if [ -z "$preferredModelValue" ] || [ "$preferredModelValue" = "host" ]; then
     echo ""
-    return 0
-  fi
-
-  modelTierValue=$(echo "$frontmatterYaml" | yq '.modelTier // "tier-2"')
-
-  if [ "$preferredModelValue" = "host" ]; then
-    providerName=$(resolveHostProviderName)
-    if [ -z "$providerName" ]; then
-      echo ""
-      return 0
-    fi
-    resolvedModelString=$(resolveProviderModelId "$providerName" "$modelTierValue")
-    echo "$resolvedModelString"
     return 0
   fi
 
@@ -194,13 +183,14 @@ resolvePersonaModelId() {
     return 0
   fi
 
+  modelTierValue=$(echo "$frontmatterYaml" | yq '.modelTier // "tier-2"')
   resolvedModelString=$(resolveProviderModelId "$preferredModelValue" "$modelTierValue")
   echo "$resolvedModelString"
 }
 
-readPersonaShortDescription() {
+readPersonaDescription() {
   local personaPath="$1"
-  readPersonaFrontmatter "$personaPath" | yq '.shortDescription // ""'
+  readPersonaFrontmatter "$personaPath" | yq '.description // ""'
 }
 
 readPersonaHumor() {
@@ -216,8 +206,8 @@ resolveHumorAttributes() {
       case "$attribute" in
         temperature)      echo "0.2" ;;
         topP)             echo "0.7" ;;
-        thinkingBudget)   echo "4096" ;;
-        reasoningEffort)  echo "low" ;;
+        thinkingBudget)   echo "6144" ;;
+        reasoningEffort)  echo "medium" ;;
       esac
       ;;
     introvert)
@@ -225,7 +215,7 @@ resolveHumorAttributes() {
         temperature)      echo "0.2" ;;
         topP)             echo "0.75" ;;
         thinkingBudget)   echo "8192" ;;
-        reasoningEffort)  echo "low" ;;
+        reasoningEffort)  echo "high" ;;
       esac
       ;;
     pragmatic)
@@ -233,7 +223,7 @@ resolveHumorAttributes() {
         temperature)      echo "0.25" ;;
         topP)             echo "0.8" ;;
         thinkingBudget)   echo "12288" ;;
-        reasoningEffort)  echo "medium" ;;
+        reasoningEffort)  echo "xhigh" ;;
       esac
       ;;
     sympathetic)
@@ -241,7 +231,7 @@ resolveHumorAttributes() {
         temperature)      echo "0.3" ;;
         topP)             echo "0.85" ;;
         thinkingBudget)   echo "14336" ;;
-        reasoningEffort)  echo "high" ;;
+        reasoningEffort)  echo "max" ;;
       esac
       ;;
     extrovert)
@@ -249,7 +239,7 @@ resolveHumorAttributes() {
         temperature)      echo "0.35" ;;
         topP)             echo "0.85" ;;
         thinkingBudget)   echo "16384" ;;
-        reasoningEffort)  echo "xhigh" ;;
+        reasoningEffort)  echo "max" ;;
       esac
       ;;
     *)
@@ -294,6 +284,10 @@ applyPermissionProfile() {
     "bash": {
       "*": "ask",
       "rm *": "deny",
+      "rm -f /tmp/*": "allow",
+      "rm -r /tmp/*": "allow",
+      "rm -rf /tmp/*": "allow",
+      "rm /tmp/*": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
       "chmod *": "deny",
@@ -301,6 +295,7 @@ applyPermissionProfile() {
       "curl *": "deny",
       "wget *": "deny",
       "sudo *": "deny",
+      "git -*": "deny",
       "git clean *": "deny",
       "git reset *": "deny",
       "git rebase *": "deny",
@@ -318,14 +313,20 @@ applyPermissionProfile() {
       "dirname *": "allow",
       "realpath *": "allow",
       "readlink *": "allow",
-      "env *": "allow",
+      "env": "allow",
+      "env *": "deny",
       "pwd *": "allow",
       "date *": "allow",
       "id *": "allow",
       "ps *": "allow",
       "test *": "allow",
+      "tinyfish auth status": "allow",
+      "tinyfish auth status *": "allow",
+      "tinyfish fetch content get *": "allow",
+      "tinyfish search query *": "allow",
       "ls *": "allow",
       "find *": "allow",
+      "find * -delete*": "deny",
       "grep *": "allow",
       "rg *": "allow",
       "cat *": "allow",
@@ -370,7 +371,9 @@ applyPermissionProfile() {
     "read": {
       "*": "allow",
       "*.env": "deny",
-      "*.env.*": "deny"
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      ".env.example": "allow"
     },
     "external_directory": {
       ".memory/*": "allow",
@@ -397,6 +400,10 @@ applyPermissionProfile() {
       "xargs *": "deny",
       "ln *": "deny",
       "rm *": "deny",
+      "rm -f /tmp/*": "allow",
+      "rm -r /tmp/*": "allow",
+      "rm -rf /tmp/*": "allow",
+      "rm /tmp/*": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
       "chmod *": "deny",
@@ -404,6 +411,7 @@ applyPermissionProfile() {
       "curl *": "deny",
       "wget *": "deny",
       "sudo *": "deny",
+      "git -*": "deny",
       "git clean *": "deny",
       "git reset *": "deny",
       "git rebase *": "deny",
@@ -427,14 +435,20 @@ applyPermissionProfile() {
       "dirname *": "allow",
       "realpath *": "allow",
       "readlink *": "allow",
-      "env *": "allow",
+      "env": "allow",
+      "env *": "deny",
       "pwd *": "allow",
       "date *": "allow",
       "id *": "allow",
       "ps *": "allow",
       "test *": "allow",
+      "tinyfish auth status": "allow",
+      "tinyfish auth status *": "allow",
+      "tinyfish fetch content get *": "allow",
+      "tinyfish search query *": "allow",
       "ls *": "allow",
       "find *": "allow",
+      "find * -delete*": "deny",
       "grep *": "allow",
       "rg *": "allow",
       "cat *": "allow",
@@ -495,6 +509,10 @@ applyPermissionProfile() {
     "bash": {
       "*": "ask",
       "rm *": "deny",
+      "rm -f /tmp/*": "allow",
+      "rm -r /tmp/*": "allow",
+      "rm -rf /tmp/*": "allow",
+      "rm /tmp/*": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
       "chmod *": "deny",
@@ -502,6 +520,7 @@ applyPermissionProfile() {
       "curl *": "deny",
       "wget *": "deny",
       "sudo *": "deny",
+      "git -*": "deny",
       "git clean *": "deny",
       "git reset *": "deny",
       "git rebase *": "deny",
@@ -526,14 +545,20 @@ applyPermissionProfile() {
       "dirname *": "allow",
       "realpath *": "allow",
       "readlink *": "allow",
-      "env *": "allow",
+      "env": "allow",
+      "env *": "deny",
       "pwd *": "allow",
       "date *": "allow",
       "id *": "allow",
       "ps *": "allow",
       "test *": "allow",
+      "tinyfish auth status": "allow",
+      "tinyfish auth status *": "allow",
+      "tinyfish fetch content get *": "allow",
+      "tinyfish search query *": "allow",
       "ls *": "allow",
       "find *": "allow",
+      "find * -delete*": "deny",
       "grep *": "allow",
       "rg *": "allow",
       "cat *": "allow",
@@ -586,7 +611,9 @@ applyPermissionProfile() {
     "read": {
       "*": "allow",
       "*.env": "deny",
-      "*.env.*": "deny"
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      ".env.example": "allow"
     },
     "external_directory": {
       ".memory/*": "allow",
@@ -613,6 +640,10 @@ applyPermissionProfile() {
       "xargs *": "deny",
       "ln *": "deny",
       "rm *": "deny",
+      "rm -f /tmp/*": "allow",
+      "rm -r /tmp/*": "allow",
+      "rm -rf /tmp/*": "allow",
+      "rm /tmp/*": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
       "chmod *": "deny",
@@ -620,6 +651,7 @@ applyPermissionProfile() {
       "curl *": "deny",
       "wget *": "deny",
       "sudo *": "deny",
+      "git -*": "deny",
       "git clean *": "deny",
       "git reset *": "deny",
       "git rebase *": "deny",
@@ -643,14 +675,20 @@ applyPermissionProfile() {
       "dirname *": "allow",
       "realpath *": "allow",
       "readlink *": "allow",
-      "env *": "allow",
+      "env": "allow",
+      "env *": "deny",
       "pwd *": "allow",
       "date *": "allow",
       "id *": "allow",
       "ps *": "allow",
       "test *": "allow",
+      "tinyfish auth status": "allow",
+      "tinyfish auth status *": "allow",
+      "tinyfish fetch content get *": "allow",
+      "tinyfish search query *": "allow",
       "ls *": "allow",
       "find *": "allow",
+      "find * -delete*": "deny",
       "grep *": "allow",
       "rg *": "allow",
       "cat *": "allow",
@@ -720,6 +758,10 @@ applyPermissionProfile() {
     "bash": {
       "*": "ask",
       "rm *": "deny",
+      "rm -f /tmp/*": "allow",
+      "rm -r /tmp/*": "allow",
+      "rm -rf /tmp/*": "allow",
+      "rm /tmp/*": "allow",
       "mkfs *": "deny",
       "dd *": "deny",
       "chmod *": "deny",
@@ -727,6 +769,7 @@ applyPermissionProfile() {
       "curl *": "deny",
       "wget *": "deny",
       "sudo *": "deny",
+      "git -*": "deny",
       "git clean *": "deny",
       "git reset *": "deny",
       "git rebase *": "deny",
@@ -750,13 +793,19 @@ applyPermissionProfile() {
       "dirname *": "allow",
       "realpath *": "allow",
       "readlink *": "allow",
-      "env *": "allow",
+      "env": "allow",
+      "env *": "deny",
       "pwd *": "allow",
       "date *": "allow",
       "id *": "allow",
       "ps *": "allow",
       "test *": "allow",
+      "tinyfish auth status": "allow",
+      "tinyfish auth status *": "allow",
+      "tinyfish fetch content get *": "allow",
+      "tinyfish search query *": "allow",
       "find *": "allow",
+      "find * -delete*": "deny",
       "grep *": "allow",
       "rg *": "allow",
       "ls *": "allow",
@@ -796,7 +845,9 @@ applyPermissionProfile() {
     "read": {
       "*": "allow",
       "*.env": "deny",
-      "*.env.*": "deny"
+      "*.env.*": "deny",
+      "*.env.example": "allow",
+      ".env.example": "allow"
     },
     "external_directory": {
       ".memory/*": "allow",
@@ -823,12 +874,36 @@ applyPermissionProfile() {
 writeAgentsToConfigFile() {
   local configPath="$1"
   local agentBindings="$2"
-  local tmpFile
-  tmpFile=$(mktemp)
+  local tmpFile existingAgentBindings mergedBindings
 
+  existingAgentBindings=$(jq -S '.agent // {}' "$configPath" 2>/dev/null || echo '{}')
+  mergedBindings=$(jq -S --argjson bindings "$agentBindings" \
+    '.agent = (.agent // {} | . + $bindings) | .agent' "$configPath" 2>/dev/null || echo '{}')
+
+  if [ "$existingAgentBindings" = "$mergedBindings" ]; then
+    echo "unchanged"
+    return
+  fi
+
+  tmpFile=$(mktemp)
   jq --argjson bindings "$agentBindings" \
     '.agent = (.agent // {} | . + $bindings)' "$configPath" > "$tmpFile"
   mv "$tmpFile" "$configPath"
+  echo "changed"
+}
+
+applyAgentVisibilityProfile() {
+  local agentName="$1"
+  local agentBindings="$2"
+
+  if [ "$agentName" = "build" ]; then
+    echo "$agentBindings" | jq --arg name "$agentName" \
+      '.[$name] = .[$name] + {"mode": "primary"}'
+    return
+  fi
+
+  echo "$agentBindings" | jq --arg name "$agentName" \
+    '.[$name] = .[$name] + {"mode": "subagent", "hidden": true}'
 }
 
 disablePlanAgentBuilder() {
@@ -855,10 +930,14 @@ agentBindingBuilder() {
   fi
 
   local agentJson
-  agentJson=$(jq -n \
-    --arg model "$modelId" \
-    --arg description "$description" \
-    '{model: $model, description: $description}')
+  agentJson=$(jq -n --arg description "$description" \
+    '{description: $description}')
+  if [ -n "$modelId" ]; then
+    agentJson=$(jq -n \
+      --arg model "$modelId" \
+      --arg description "$description" \
+      '{model: $model, description: $description}')
+  fi
 
   if [ -n "$temperature" ]; then
     agentJson=$(echo "$agentJson" | jq --argjson temp "$temperature" '. + {temperature: $temp}')
@@ -878,7 +957,7 @@ agentBindingBuilder() {
 
 personaAgentJsonBuilder() {
   local personasDir="$1"
-  local personaPath agentName modelId humor temperature topP thinkingBudget agentBindings shortDescription
+  local personaPath agentName preferredModel modelId humor temperature topP thinkingBudget agentBindings personaDescription reasoningEffort
   agentBindings="{}"
 
   for personaPath in "$personasDir"/*.md; do
@@ -889,22 +968,32 @@ personaAgentJsonBuilder() {
 
     agentName=$(resolveAgentName "$agentName")
 
+    preferredModel=$(readPersonaPreferredModel "$personaPath")
+
+    humor=$(readPersonaHumor "$personaPath")
+    personaDescription=$(readPersonaDescription "$personaPath")
+    temperature=$(resolveHumorAttributes "$humor" "temperature")
+    topP=$(resolveHumorAttributes "$humor" "topP")
+    thinkingBudget=$(resolveHumorAttributes "$humor" "thinkingBudget")
+    reasoningEffort=$(resolveHumorAttributes "$humor" "reasoningEffort")
+
+    if [ "$(shouldSkipDispatch "$preferredModel")" = "true" ]; then
+      agentBindings=$(agentBindingBuilder "$agentName" "" "$personaDescription" "$temperature" "$topP" "$thinkingBudget" "$agentBindings" "$reasoningEffort")
+      agentBindings=$(applyPermissionProfile "$agentName" "$agentBindings")
+      agentBindings=$(applyAgentVisibilityProfile "$agentName" "$agentBindings")
+      continue
+    fi
+
     modelId=$(resolvePersonaModelId "$personaPath")
 
     if [ -z "$modelId" ]; then
       continue
     fi
 
-    humor=$(readPersonaHumor "$personaPath")
-    shortDescription=$(readPersonaShortDescription "$personaPath")
-    temperature=$(resolveHumorAttributes "$humor" "temperature")
-    topP=$(resolveHumorAttributes "$humor" "topP")
-    thinkingBudget=$(resolveHumorAttributes "$humor" "thinkingBudget")
-    reasoningEffort=$(resolveHumorAttributes "$humor" "reasoningEffort")
-
-    agentBindings=$(agentBindingBuilder "$agentName" "$modelId" "$shortDescription" "$temperature" "$topP" "$thinkingBudget" "$agentBindings" "$reasoningEffort")
+    agentBindings=$(agentBindingBuilder "$agentName" "$modelId" "$personaDescription" "$temperature" "$topP" "$thinkingBudget" "$agentBindings" "$reasoningEffort")
 
     agentBindings=$(applyPermissionProfile "$agentName" "$agentBindings")
+    agentBindings=$(applyAgentVisibilityProfile "$agentName" "$agentBindings")
   done
 
   echo "$agentBindings"
@@ -955,8 +1044,6 @@ configStatus="${configLine##* }"
 
 checkRequiredDependencies yq jq
 
-hostModelId="${1:-}"
-
 personasDir=".agents/personas"
 if [ ! -d "$personasDir" ]; then
   echo "PersonasDirectoryNotFound" >&2
@@ -966,8 +1053,16 @@ fi
 agentBindings=$(personaAgentJsonBuilder "$personasDir")
 agentBindings=$(addGeneralAgent "$agentBindings")
 agentBindings=$(disablePlanAgentBuilder "$agentBindings")
-writeAgentsToConfigFile "$configPath" "$agentBindings"
+writeResult=$(writeAgentsToConfigFile "$configPath" "$agentBindings")
+
+finalStatus="unchanged"
+if [ "$configStatus" = "created" ]; then
+  finalStatus="created"
+fi
+if [ "$writeResult" = "changed" ] && [ "$configStatus" != "created" ]; then
+  finalStatus="updated"
+fi
 
 agentCount=$(echo "$agentBindings" | jq 'keys | length')
 echo "${configPath}: configured ${agentCount} persona agent bindings"
-echo "configStatus=${configStatus}"
+echo "configStatus=${finalStatus}"

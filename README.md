@@ -15,7 +15,7 @@ This is a **foundation**, not a finished product. It ships what an average devel
 
 The **Maestro** is the conductor. It receives user requests, decomposes them, and dispatches work to specialized personas:
 
-- **Architect** — plans implementations, defines before/after states
+- **Architect** — owns the design tree the grill interviews over, grounds plan artifacts for implementation
 - **Coder** — writes software following the plan
 - **Reviewer** — checks work for correctness and quality
 - **Contextualizer** — documents project structure for orientation
@@ -42,6 +42,8 @@ The `.agents/` directory lives inside your project — it's not a plugin you ins
    ```bash
    ln -s .agents/AGENTS.md AGENTS.md
    ```
+
+   The symlink matters: AI CLIs auto-load an `AGENTS.md` at the project root, but not one inside `.agents/`. For project-specific rules that override the style book, create `AGENTS.override.md` in the project root.
 
 3. Start the AI agent interface (e.g., `claude`, `opencode` or whatever CLI/TUI you use).
 4. As the first message of every session, choose a mode:
@@ -73,7 +75,7 @@ If the tools aren't installed or you're using a different CLI, the script exits 
 ```
 personas/    Specialized AI roles (who does the work)
 rules/       Constraints
-skills/      Reusable procedures and protocols
+skills/      Reusable procedures and protocols (one SKILL.md per directory)
 ```
 
 ## Skills
@@ -82,30 +84,35 @@ Skills codify procedures that personas reference. They answer "how to do X" so p
 
 - **agent-decision** — persona decision-making framework with self-review rubrics
 - **agent-memory** — long-term and session memory across sessions
-- **architect-self-review** — DRAFT self-review rubric — plan quality gate
+- **architect-design-tree** — builds the grill's design tree: decisions, dependencies, recommendations, impact
+- **architect-impl-grounding** — grounds the grill's artifacts: annotates impl.md per epic, re-grounds after each landing
 - **boot** — session startup sequence (full boot for complex features)
+- **browser-inspect** — browser inspection for verifying rendered web UI
 - **code-coherence-review** — logic coherence, correctness, and structural integrity checks
 - **code-quality-review** — rules-walk procedure for coding standards compliance
-- **code-sec-review** — OWASP-aligned security code review checklist
+- **code-sec-review** — static security review — attack surface, CWE/OWASP 2025, MITRE ATT&CK
 - **coder-self-review** — GRASP self-review rubric — implementation quality gate
 - **context-maintenance** — schema and rules for `.context.md` files
 - **contextualizer-self-review** — TRACE self-review rubric — context generation quality gate
 - **dispatch** — how the Maestro assembles and sends work to personas
+- **grill** — protocol that interviews the user in rounds over the Architect's design tree
+- **plan-management** — plan lifecycle: grill entry, grounding, artifact review, per-epic execution, revision
 - **loop-recovery** — structured recovery and escalation for retry loops
-- **review-loop** — LOC-based review tier selection with shapeshifter dispatch
+- **review-loop** — two-mode review loop — single reviewer per epic, three reviewers for full branch
 - **reviewer-architect-adversarial** — adversarial plan validation and assumption attack
 - **reviewer-handoff** — structured review summary format with verdict logic
 - **reviewer-self-review** — SHIELD self-review rubric — unified reviewer quality gate
 - **task-tracking** — file-based to-do for multi-step work
+- **web-search** — web search and page fetch through the TinyFish CLI
 
 ## Customization
 
-- **Dispatch** — edit `skills/dispatch.md` to customize providers. The Providers list is pre-configured with one entry per CLI. Each persona defaults to `host`, which uses whatever model your CLI provides — no configuration needed.
+- **Dispatch** — edit `skills/dispatch/SKILL.md` to customize providers. The Providers list is pre-configured with one entry per CLI. Each persona defaults to `host`, which uses whatever model your CLI provides — no configuration needed.
 - Add new personas to `personas/` following the schema in `personas/README.md`
 - Add rules to `rules/`
 - Add skills to `skills/` following the schema in `skills/README.md`
 - Modify existing files to match your project's needs
-- **AGENTS.md** — edit to add your project's coding conventions, language-specific rules, or personal preferences. This file loads automatically in quick mode, so anything you add here shapes every session without booting the Maestro.
+- **AGENTS.md** — edit to add your project's coding conventions, language-specific rules, or personal preferences. This file loads automatically in quick mode, so anything you add here shapes every session without booting the Maestro. For rules you want to keep out of your fork, use `AGENTS.override.md` at the project root instead — it takes precedence over every rule in the style book.
 
 Each directory has a README with the full schema definition.
 
@@ -117,7 +124,7 @@ GSD, GStack, and Gas Town are software — they lock you into dependencies, runt
 
 Most harnesses are built around dense, expensive models and burn thousands of tokens on guidance you'll never use. This kit is a **scalpel**: minimal by design, tuned for cheaper MoE models like DeepSeek, GLM, Kimi, and Qwen. You pay only for the context you need. When your project grows, you extend it — add a persona, tweak a rule, swap a provider — all in plain text. Other tools produce code once and walk away. This framework learns, remembers, and adapts across every session.
 
-*\* Almost — one optional shell script for OpenCode auto-configuration and a YAML provider list in `skills/dispatch.md`. No runtimes, no dependencies, no build steps.*
+*\* Almost — one optional shell script for OpenCode auto-configuration and a YAML provider list in `skills/dispatch/SKILL.md`. No runtimes, no dependencies, no build steps.*
 
 ### Full orchestration or quick mode — which do I use?
 
@@ -141,7 +148,7 @@ A coding plan or API key for each provider you route to. We recommend coding pla
 
 ### How does the Maestro use multiple models from a single CLI?
 
-The dispatch skill (`skills/dispatch.md`) handles this automatically. When a persona's `preferredModel` matches the host runtime (e.g., you're running Claude Code and the persona wants `claude`), the Maestro dispatches natively using the host's built-in subagent mechanism (e.g., the Task tool). When the `preferredModel` points to a different provider (e.g., `deepseek`), the Maestro shells out to that provider's CLI tool (e.g., `opencode`) by piping the assembled prompt via `stdin`. The Providers list in `skills/dispatch.md` maps each model family to its CLI — see that file for details.
+The dispatch skill (`skills/dispatch/SKILL.md`) handles this automatically. When a persona's `preferredModel` matches the host runtime (e.g., you're running Claude Code and the persona wants `claude`), the Maestro dispatches natively using the host's built-in subagent mechanism (e.g., the Task tool). When the `preferredModel` points to a different provider (e.g., `deepseek`), the Maestro shells out to that provider's CLI tool (e.g., `opencode`) by piping the assembled prompt via `stdin`. The Providers list in `skills/dispatch/SKILL.md` maps each model family to its CLI — see that file for details.
 
 ### Can I use this with just one model?
 
@@ -167,6 +174,6 @@ Any model with a CLI tool that can accept a prompt via `stdin` works. As a quali
 
 ### What thinking token budget should I use for MoE models?
 
-If you use Mixture-of-Experts models (Kimi, Qwen, DeepSeek, or similar), cap thinking tokens at **16,000** in your CLI's configuration. Research across 121+ code review dispatches found that MoE models regress past this threshold — higher budgets cause models to qualify findings, soften severity, and rationalize away bugs they previously found. Dense models (Claude, Seed) do not exhibit this regression and can use higher budgets safely. See [Overfed, Overthought, Overasked](https://ntorga.com/overfed-overthought-overasked-stop-sabotaging-your-ai/) for the full research.
+If you use Mixture-of-Experts models (Kimi, Qwen, DeepSeek, or similar), cap thinking tokens at **16,384** in your CLI's configuration. Research across 121+ code review dispatches found that MoE models regress past this threshold — higher budgets cause models to qualify findings, soften severity, and rationalize away bugs they previously found. Dense models (Claude, Seed) do not exhibit this regression and can use higher budgets safely. See [Overfed, Overthought, Overasked](https://ntorga.com/overfed-overthought-overasked-stop-sabotaging-your-ai/) for the full research.
 
 If you're running OpenCode, the boot sequence already sets per-persona thinking budgets based on humor profiles — no manual configuration needed.

@@ -1,8 +1,9 @@
 ---
-shortDescription: Deterministic self-evaluation rubric for decision escalations — scored every run using the FRAME framework.
+name: agent-decision
+description: Deterministic self-evaluation rubric for decision escalations — scored every run using the FRAME framework.
 usedBy: [all]
-version: 0.2.0
-lastUpdated: 2026-04-24
+version: 0.2.2
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -54,7 +55,7 @@ This skill defines the procedure agents follow when encountering ambiguity durin
      a. Identify which letters scored below 2.
      b. Fix those gaps automatically (do NOT consult the user).
      c. Re-score, then deliver if 9-10.
-     d. If still below 9-10, retry once more.
+     d. If still below 9, retry once more.
      e. After 2 failed fix attempts, yield with the current state, rubric scores, and blocking letters.
    - **0 – 6** — **RESTART** — The escalation is fundamentally broken. Discard and rebuild with corrected understanding, or yield with an explanation of what went wrong.
 
