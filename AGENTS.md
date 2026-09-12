@@ -3,147 +3,124 @@
 **Fork:** franklinbravos/agent-starter-kit — version tracked in `VERSION`.
 **Original:** [ntorga/agent-starter-kit](https://github.com/ntorga/agent-starter-kit).
 
-A style book for code that reads itself. Internalize the reasoning, apply the judgment, write code that the next reader can follow without reverse-engineering.
+> **Before anything else:** read `AGENTS.override.md` in the project root if it exists. It holds project-specific behavior changes and important instructions that take precedence over every rule in this file.
+
+This is a style book for code that reads itself. You will apply these rules by matching patterns, so match on the reasoning behind each rule, not its wording. The goal is code that explains itself and clearly belongs in the project it lives in. The concrete rules live in `.agents/rules/code/`. They are split by domain: general coding, shell, debugging. Read the files your change touches.
+
+Specialized workflows have their own playbooks under `.agents/skills/`: agent behavior, code review, UI verification, architecture, context maintenance. Read the relevant playbook before doing that kind of work.
 
 ## Honesty and Ambiguity
 
-If a request is flawed, say so — agreeable silence produces bad code. When the user assigns a task, proceed on any non-destructive reversible action needed to complete it; git is the safety net, stopping to confirm the obvious wastes the session. Stop only for destructive or irreversible actions (delete repository, drop database, force-push to main), or genuinely non-obvious trade-offs. When intent could mean different things, escalate with structure: one problem, three options with trade-offs, one recommendation with reason. When the ambiguity only changes how (not what), proceed inline with a documented default.
+If a request is flawed, say so.
 
-## Code Shape
-
-Getting function boundaries right means the reader never reassembles scattered logic or untangles mixed concerns. Three questions: what to extract, what to unify, what to keep together.
-
-### Function Extraction
-
-Extract a function when it performs a transformation through genuine logic — input processed into distinct output. Inline a function when its body delegates to a single call with trivial wrapping (rename, forward, reformat). A 60-line function performing one operation is correct; a 5-line function that wraps another call is indirection. The test: removing the function and inlining its body at the call site — does the caller lose clarity or gain it?
-
-### Duplication
-
-Two code paths that share knowledge require synchronized edits — a change to one demands the same change to the other. Unify them. Two code paths that look similar but answer different questions are two responsibilities that happen to resemble each other. Shared code couples them; when one question evolves the other drags. The test: would a requirement change affect both paths identically? Identical → unify. Divergent → the resemblance is coincidental, keep separate.
-
-### Single Responsibility
-
-One reason to change per function, module, file. A function that parses input and validates it and builds the domain object from the parsed values has one reason to change — the input contract; all three steps share its fate. A function that parses input and validates it and then maps to a separate domain model has two reasons — the input contract and the domain model change independently. The test: "if the requirements change, would these operations change independently?" Independent → split. Shared fate → keep together — length is not the signal.
-
-### Readability Over Performance
-
-<audience-directive>
-You are not writing code for the compiler. The compiler validates syntax and will tell you when you got it wrong — that is its only job, and it is already solved. You are writing code for a stranger at 3am who has never seen this codebase, does not have your context, and must fix a bug in it without breaking anything else. That stranger is your audience. Every choice you make — a name, a comment, a data structure, an inlined expression — answers to one question: will the stranger understand this without reverse-engineering it, without reading documentation, without doing arithmetic in their head? If the answer is no, the code is wrong, regardless of whether it compiles. Compiling is the floor, not the goal. Readable-by-a-stranger-at-3am is the goal.
-</audience-directive>
-
-When choosing between a clever solution and a simple one, prefer simple. Clever patterns — `Array.from` with callbacks, Fisher-Yates shuffles, bitwise hacks, dense one-liners, or any construct that requires prior knowledge to understand — should be avoided. Use plain loops and simple logic. Every line should read as plain English to a human who has never seen the codebase. Performance optimization is justified only when a measured bottleneck demands it.
-
-## Naming and Communication
-
-The reader should learn what a variable holds or a function does from the name without inspecting the body. When the name fails, restructure before reaching for a comment — a comment that explains what the code does is the last resort, not the first tool. Logging is the third channel: the message that surfaces at 3am is a search key, not prose.
-
-### Naming
-
-Names convey intention and purpose, not content. `runIndex` says it's a loop counter for runs; `i` says nothing. `resolvedPaths` says these went through resolution; `paths` restates the type. `numberWithinRange` says what `%` produced. The bare operation says how, not what.
-
-- Compound names when a single word lacks specificity (`collectionName`, not `name`).
-- Single-letter names are forbidden — no `i`, `j`, `n`, `e`. Every variable needs a descriptive name.
-- Functions describe what they produce, not how they produce it. For functions carrying real responsibility, prefer a responsibility or design-pattern noun suffix (`loadoutPathsResolver`, `userFactory`) over a verb-prefixed action name.
-- Names survive a tool swap (`messagingUsersReader`, not `slackUsersReader`).
-- Booleans answer a question in their name (`IsAdmin`, `HasSession`, `ShouldRetry`).
-- Type in the name when ambiguous from context (`rawRandomInteger`, not `rawRandomNumber`).
-- Parameters make sense from the signature alone, without reading the call site.
-
-### Comments Are a Signal
-
-A comment is a confession, not a tool. The default is no comment: restructure first (name the concept, extract the translation, absorb the contract into a type), and only when the code is still unreadable to the stranger take the comment as the lesser poison — a stale comment beats unreadable code. An external constraint (a stdlib contract, a format detail, an upstream bug) is the prompt to absorb it into a structure, not permission to stop. Claiming no structure works without naming what you tried — that's the dodge this rule exists to catch. The comment explains why, never what.
-
-### Logging
-
-PascalCase without spaces — `UserCreated`, `PaymentFailed`, `TokenExpired`. Greppable, unambiguous word boundaries. A log message is a search key. Log entries MUST NOT contain secrets, tokens, or PII — the message that helps at 3am must not be the message that leaks at 9am. Debug-level logs (`slog.Debug`, equivalent) are the exception: they appear only when debug mode is enabled, so PII is acceptable there.
-
-## Flow and Structure
-
-The reader should follow the happy path without indentation, see where every value comes from, and encounter each function before meeting its callers.
-
-### Control Flow
-
-Guard clauses first: handle the invalid case, return early, keep the happy path unindented and visible. Avoid `else` in logic — the early return already expressed the branch. `else` is acceptable in metalanguages such as templates, where early return is not available and two visible branches aid comprehension. When multiple `if` blocks test the same variable, a `switch` or strategy dispatch says "I am branching on this one thing" more clearly than stacked conditionals.
-
-Visible assignment: when a function returns a value, the reader sees where it lands. An API that mutates in place hides the origin of every value; restructuring so the assignment is explicit (`result := transform(input)`) makes the data flow visible. No `=` sign means the reader traces the call to learn what changed.
-
-### Structure
-
-- Functions ordered top-down: a function is defined above its first caller, so the reader understands each piece before meeting the code that uses it.
-- Constructors sit immediately after their type declaration — the type and its constructor are one concept.
-- Lines kept short enough to read without horizontal scrolling.
-
-Locality of behavior: if a function takes a struct as its first argument and reads or transforms its fields, it belongs as a method on that struct, not a package-level function. A function whose only caller is a method belongs with that caller — nested within it when the body is a trivial wrapping, or as a method on the same type when it carries real transformation logic — not at package level serving one consumer. Exceptions: constructors (`NewFoo`), functions that create a struct from external input, and genuinely generic utilities that work across multiple unrelated types.
-
-### Style Proximity
-
-Before writing or editing a file, read one or two sibling files in the same directory — pick those most similar in function to the change. Match their structure, naming, and patterns. Code that follows the rules but contradicts local convention creates a seam the next reader trips over — a patchwork quilt. The rules say what good code looks like in the abstract; the siblings say what good code looks like here. When the existing codebase contradicts a rule in this book, follow the local convention and flag the divergence — consistency within the file's neighborhood outweighs abstract correctness.
-
-## Boundaries
-
-External data and external failures are where production breaks — they need explicit, single-point handling so the rest of the code can assume safe input and loud errors.
-
-### Data Enters Untrusted
-
-User input, database results, API responses, environment variables, file contents — all enter untrusted, regardless of origin. A database row is no safer than a query parameter; both carry stale state or malformed values.
-
-- The value object's constructor is the single validation point: if data passes construction, it's safe downstream.
-- Raw external data flows into queries, templates, or commands only after construction.
-- The constructor is the parse function — a standalone `parseFoo(raw)` alongside a `Foo` with a validating constructor is the same operation expressed twice.
-
-### Errors Are Loud
-
-An error that passes without a log entry is a silent failure — the kind that surfaces at 3am as "it just stopped working." Errors are always logged.
-
-- Propagation depends on context: a side-effect failure may log and continue; a critical failure propagates through the language's error mechanism.
-- Process termination (`panic`, `os.Exit`, `throw`) is a startup tool — when a required dependency is missing or config is invalid, failing fast is correct. Once serving, every failure is graceful because a serving process that crashes takes its users with it.
-
-### Hardcoding
-
-Content that originates from a backend, API, or config should not be hardcoded in source. One source of truth — a hardcoded value drifts from the config the next reader will edit.
-
-### Dependency Audit on Feature Change
-
-When adding a feature or mechanism that changes the behavior of an existing dependency (config file, registry, shared data structure), audit the affected dependency for: shared entries that belong in a shared layer, entries the new mechanism makes redundant, and logic the new mechanism fully replaces. The feature is not complete until duplicates are removed.
-
-### Schema Changes
-
-Database schema modifications should be explicitly stated in any handoff or commit summary.
-
-## Verification
-
-Tests and debugging exist to catch what the author missed — they fail their purpose when they test implementation instead of behavior, or treat symptoms instead of causes.
-
-### Testing as Behavior Verification
-
-Tests verify behavior: given this input, the output is this. A test that breaks when internals are refactored without changing behavior is testing the wrong thing — it's a maintenance burden wearing a safety net's clothes. Table-driven tests express the variation cleanly. Infrastructure tests hit real external APIs (test/sandbox endpoints, never production) because mocking at the boundary hides the integration failure that's the whole point of testing there. Secrets stay out of tests. Each test file owns its setup and teardown inline — independence across files, order-dependence allowed within a file when it reflects a natural workflow.
-
-Test setup helpers belong inside the test function (as a closure or local function), prefixed with the test name, or encapsulated in a struct — not as package-level functions. When helpers are extracted to the file level, setup helpers go above the test and teardown goes at the end of the file. A test that leaves state behind poisons the next test's assumptions.
-
-### Debugging as Investigation
-
-Root cause before fix. Read the error, reproduce the failure, check recent changes, trace the data flow to origin — treating symptoms creates new bugs while the original one keeps growing. One fix at a time, because bundling makes it impossible to know which change resolved the issue. After three failed attempts, the approach is the problem, not the attempt — stop and reconsider the framing. "Should work now" is confidence without evidence; "already tested" ignores that code changed since; "trivial change" is how production breaks; "I see the problem" is seeing the symptom, not the cause. When stuck, find a working example of the same pattern in the codebase and diff it against the broken one — the difference is more informative than the error message.
-
-### Code Review
-
-Review focuses on three areas, each with its own skill: coherence — logic, correctness, structural alignment (`skills/code-coherence-review.md`); quality — coding standards, naming, style (`skills/code-quality-review.md`); security — OWASP, attack surface, data flow (`skills/code-sec-review.md`). A change touching auth, external input, or data flow always warrants review; a one-line typo fix does not. For large changes, split the review — one pass per focus — so each reviewer goes deep. Findings must be verified against the codebase before acting on them. A reviewer reads and reports — it creates no files in the codebase; all findings belong in the review handoff.
-
-### Review Trust
-
-A passing automated check is evidence, not proof. Linters, test suites, and ref checkers have blind spots — stale patterns, generated files, paths the tool doesn't cover. Manually verify the same category the tool checked wherever the tool's blind spot would have consequences — renames, path moves, permission and auth changes, data migrations are the usual suspects, but the test is consequence, not category. A reviewer reads and reports — it creates no files in the codebase; all findings belong in the review handoff.
-
-## Native Tooling
-
-Use native file operation tools (Edit, Read, Write, Grep, Glob) directly. Writing scripts (Python, Bash, etc.) to perform file reads, edits, searches, or any file system operation creates unnecessary friction — scripts require authorization and review. The native tools are purpose-built for these operations and execute without approval overhead.
+- Proceed without asking: any non-destructive, reversible action the task needs. Git is the safety net. Stopping to confirm the obvious wastes the session.
+- Stop and ask: destructive or irreversible actions (deleting a repository, dropping a database, force-pushing to main), and genuinely non-obvious trade-offs.
+- When intent could mean different things, or your work surfaces a finding worth raising, state the problem, offer three options with trade-offs, and recommend one (`.agents/skills/agent-decision/SKILL.md`). Keep it brief, in a conversational tone.
+- When the ambiguity only changes how (not what), proceed and document your default.
 
 ## Git
 
-Conventional commit prefixes (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`), short single-phrase messages — if the message needs to describe too much, the commit should have been split. One logical change per commit: when staged work spans concerns, split — each commit independently rollbackable. Branch names follow the same prefixes: `feat-*`, `fix-*`, `refactor-*`, `docs-*`, `test-*`, `chore-*`. Avoid squash and rebase — merge commits preserve the true history; rewriting history risks destroying work and misleading anyone who reads the log.
+- Run git from the repository root. Do not use `git -C` or other global git flags. Permission patterns match plain `git <command>` forms only.
+- Commit mechanics follow `.agents/rules/git.md`: conventional prefixes, branch names that mirror them, single-phrase messages, one logical change per commit, schema changes called out. You MUST NOT squash or rebase.
 
-## Context Maintenance
+## Readability Over Performance
 
-When a change alters a directory's purpose, structure, or key dependencies, update its `.context.md` in the same commit — a stale context file misleads the next reader (follows: `skills/context-maintenance.md`). When a change adds, removes, or alters a user-facing feature, update `docs/FEATURE-MAP.md` — a stale feature map sends the next reader down the wrong path. Both are part of the logical change, separate concerns.
+<audience-directive>
+You do not write code for the compiler. The compiler only validates syntax. You write code for a stranger at 3am: they never saw this codebase, lack your context, and must fix a bug without breaking anything else. Every choice answers one question — will the stranger understand this without reverse-engineering it, without reading documentation, without doing arithmetic in their head? If not, the code is wrong, even when it compiles. Compiling is the floor. Readable-by-a-stranger-at-3am is the goal.
+</audience-directive>
+
+Before writing non-trivial logic, express the full logic in plain English. Use no code terms, short sentences, one idea per sentence, and active voice. If the expression stacks concepts, needs multi-idea sentences, or reads like a proof, the design is too complex. Simplify first, then re-express until it reads simply. The English is the specification. Code machinery it does not mention solves a problem the requirement does not have.
+
+A mechanism is earned by a problem that exists today — measured or named by a caller. A problem the code might someday have earns nothing, performance optimization included.
+
+Defensive programming is the exception. A guard earns its line when it verifies a contract the current code already depends on, and silently trusting the contract would cost more than the check. The guard fails loud. The response matches how much the violation corrupts the state: log the violation so it surfaces at 3am, then skip the item, stop the operation, or raise.
+
+Apply the test to every frame the reader enters, not just whole functions. When a frame fails, fix it with a named extraction that absorbs the non-English concept. Do not add a comment or guard in place.
+
+## Code Shape
+
+Function boundaries are right when the reader never reassembles scattered logic or untangles mixed concerns. Three questions decide the boundary: what to extract, what to unify, what to keep together.
+
+### Function Extraction
+
+Extract a function when it performs a transformation through genuine logic: input processed into distinct output. Size is a thermometer, not a verdict. Under roughly ten lines a function is likely a wrapper. Past one hundred lines it owes a hunt for a split along the criterion seams. A long function serving one criterion is correct; a thin wrapper is indirection. The test: inline the body at the call site; keep the function only when the caller loses clarity. Not every small function is a wrapper: one holding a translation the caller should not know — a format mapping, an encoding, a stdlib contract — is not indirection, however small. Inlining puts the non-English back where the name was.
+
+### Duplication
+
+Two code paths that share knowledge require synchronized edits — unify them. Two paths that look similar but answer different questions are two responsibilities that happen to resemble each other. The test: would a requirement change affect both paths identically? Identical means unify; divergent means the resemblance is coincidental — keep them separate.
+
+### Single Responsibility
+
+One reason to change per function, module, file. A responsibility is one acceptance criterion, not one operation. What serves one criterion stays together at any length; what changes for independent reasons splits. Length is not the signal. The name is the first test. After any split, rename until each name reads as one concrete action.
+
+- A conjunction (`recordAndStartContainer`) forces the question: would the two verbs change independently? If yes, split and let the caller sequence the parts. If no, keep the work under one verb that names the whole criterion (`loadConfig`, not `parseAndValidateConfig`).
+- A condition (`deleteContainerDbRecordsIfCreated`) is a decision for the caller — move it to the call site, or drop it when the operation is safe to repeat.
+- A recognized idiom (`upsert`) is one action.
+
+## Flow and Structure
+
+The reader should follow the happy path without indentation. Every extra indent level costs the reader, so the main flow runs at the left margin. The reader should see where every value comes from.
+
+- Every helper sits directly above its first caller — adjacent, not merely earlier in the file. The most composed entry point closes the file.
+- An expression the reader cannot decode without outside knowledge — a syscall errno, a stdlib counter, a format detail — earns a named variable before it is used, so the name carries the concept the operator hides. A name that only restates the expression is noise: it must say what the expression means. A self-evident expression earns no name: the name must carry knowledge the expression lacks.
+
+## Naming and Communication
+
+Comments, plans, documentation, and CHANGELOG entries MUST use STE-100 (Simplified Technical English). Write short sentences. Keep one idea per sentence. Use active voice.
+
+The reader should learn what a variable holds or a function does from the name alone, without inspecting the body.
+
+A comment is a confession, not a tool: it admits the code failed to explain itself. The default is no comment. When code is unclear, restructure first — name the concept, extract the translation, absorb the contract into a type — and reach for a comment only when the code cannot be made readable. An external constraint (a stdlib contract, a format detail, an upstream bug) is the prompt to absorb the constraint into a structure, not permission to stop at prose. A surviving comment explains why, never what. Commented-out code and TODO/FIXME markers SHOULD NOT be committed — version control holds the history, the issue tracker holds unfinished work (full policy: `.agents/rules/code/general.md`).
+
+Logging is the third channel: the message that surfaces at 3am is a search key, not prose.
+
+## Boundaries
+
+APIs and databases are contracts with the outside world. Once clients or data depend on them, mistakes are expensive to fix. Production breaks on external data and external failures. Handle both explicitly at a single point, so the rest of the code can assume safe input and loud errors. A helper returns the error; the caller decides whether the flow stops or the failure is logged and tolerated.
+
+## Testing and Debugging
+
+Tests and debugging exist to catch what the author missed. Tests verify behavior: given this input, the output is this. A test that breaks when internals change but behavior does not is testing the wrong thing.
+
+Find the root cause before you fix. Read the error, reproduce the failure, and trace the data flow to origin before touching code. Fix one cause at a time; bundling makes it impossible to know which change resolved the issue. After three failed attempts, the approach is the problem, not the attempt — stop and reconsider the framing. The confidence-trap list and the full methodology live in `.agents/rules/code/debugging.md`.
+
+## Shell as a Last Resort
+
+Shell is for tasks that native tools (Edit, Read, Write, Grep, Glob) cannot accomplish. Examples are binary manipulation and multi-step transformations with loops.
+
+When such a command is complex, do not chain one-off invocations — each one needs its own approval. Write a script under `/tmp` and run the script instead. Keep it as simple as possible so a stranger can review it in one pass. Never let the script delete files.
+
+## File Disposal
+
+Deletion is not an operation you perform. When a file looks disposable, move it to `/tmp/discarded/` (create the folder when it is missing) instead of removing it. The OS empties `/tmp` on reboot — that is the only deletion that happens. This rule governs your own actions. A committed script may delete files when its job requires it.
+
+## Verification
+
+At a stopping point — a completed todo list, a delivered feature, or a handoff — audit the diff. Scope the audit to the change; skip rules unrelated to the diff.
+
+- Explain the change in plain English to a programmer who has never seen this codebase. If the explanation needs knowledge the code does not provide — a stdlib contract, a format detail, a magic number — the code assumes knowledge instead of screaming its intention.
+- Enumerate the rules the change touches. Check each against the work.
+- Report findings before declaring complete: the checked rules and any deviations. A clean or empty report on non-trivial work is suspect — you likely missed something.
+
+## Code Review
+
+Review focuses on three areas, each with its own skill: coherence — logic, correctness, structural alignment (`.agents/skills/code-coherence-review/SKILL.md`); quality — coding standards, naming, style (`.agents/skills/code-quality-review/SKILL.md`); security — OWASP, attack surface, data flow (`.agents/skills/code-sec-review/SKILL.md`). A change touching auth, external input, or data flow always warrants review; a one-line typo fix does not. For large changes, split the review — one pass per focus — so each reviewer goes deep. Findings must be verified against the codebase before acting on them. A reviewer reads and reports — it creates no files in the codebase; all findings belong in the review handoff.
+
+## Review Trust
+
+A passing automated check is evidence, not proof. Linters, test suites, and ref checkers have blind spots — stale patterns, generated files, paths the tool doesn't cover. Manually verify the same category the tool checked wherever the tool's blind spot would have consequences — renames, path moves, permission and auth changes, data migrations are the usual suspects, but the test is consequence, not category.
 
 ## Frontend
 
 Every piece of UI is a component with a single responsibility. Components should model their states explicitly (loading, empty, populated, error) and handle each one. State that affects multiple components lives in a shared store; state that affects only one stays local. Follow the existing design system — when it lacks what is needed, flag it rather than inventing a pattern. Interactive UI components should be keyboard-navigable.
+
+When the change touches frontend, verify the rendered output in a browser before delivering (follows: `.agents/skills/browser-inspect/SKILL.md`).
+
+## Context Maintenance
+
+Two index files give direction, not implementation: **`.context.md`** (per directory) and **`docs/FEATURE-MAP.md`** (per project).
+
+- Read the directory's `.context.md` before opening files in it.
+- When one is missing or stale, dispatch `.agents/personas/contextualizer.md`.
+- Update the affected file in the same commit as the change that made it stale.
+- Formats and enforcement: `.agents/skills/context-maintenance/SKILL.md`.

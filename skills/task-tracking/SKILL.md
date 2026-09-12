@@ -1,8 +1,9 @@
 ---
-shortDescription: File-based to-do tracking for multi-step and multi-session work.
+name: task-tracking
+description: File-based to-do tracking for multi-step and multi-session work.
 usedBy: [all]
-version: 0.1.3
-lastUpdated: 2026-04-25
+version: 0.1.4
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -35,7 +36,7 @@ Agents working on multi-step tasks need a way to track progress that survives se
    TEMPLATE
    ```
 
-   Then populate the items from the architect plan's phases and file lists, or from the task brief's acceptance criteria. Each item must be a concrete, verifiable action — not a vague category.
+   Then populate the items from `impl.md` epics and file lists, or from the task brief's acceptance criteria. Each item must be a concrete, verifiable action — not a vague category.
 
    **Target directory:** `.memory/todo/` — always at the project root, never anywhere else.
 
@@ -45,7 +46,7 @@ Agents working on multi-step tasks need a way to track progress that survives se
 
 4. **Handle blockers.** If an item cannot be completed, mark it `[-]` with a reason in the log. Continue with unblocked items. If nothing can proceed, stop and note the blocker in the log.
 
-5. **Close the to-do.** When all items are done (or skipped with reason), truncate the to-do file with `echo 0 > .memory/todo/<filename>`. The handoff summary is the permanent record — the to-do is a working document, not an archive.
+5. **Close the to-do.** When all items are done (or skipped with reason), truncate the to-do file with `: > .memory/todo/<filename>`. The handoff summary is the permanent record — the to-do is a working document, not an archive.
 
 ## Schema
 

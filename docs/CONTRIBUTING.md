@@ -41,7 +41,7 @@ This project is released under the MIT License. By contributing, you agree that 
 
 ## What We Don't Accept
 
-- **Provider list updates.** The models in `skills/dispatch.md` are examples, not a registry. All personas default to `host` — the provider list only matters when a user customizes away from it. We intentionally keep one entry per CLI to minimize maintenance. If you want a different model, edit your fork's `skills/dispatch.md` — no PR needed.
+- **Provider list updates.** The models in `skills/dispatch/SKILL.md` are examples, not a registry. All personas default to `host` — the provider list only matters when a user customizes away from it. We intentionally keep one entry per CLI to minimize maintenance. If you want a different model, edit your fork's `skills/dispatch/SKILL.md` — no PR needed.
 - **Adding new providers or models.** We will not accept issues or PRs that add new model entries to the Providers block. The starter kit is a foundation — customize it in your own fork.
 
 ## Pull Request Guidelines
