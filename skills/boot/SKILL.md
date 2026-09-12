@@ -1,8 +1,9 @@
 ---
-shortDescription: Session startup — gitignore, auto-update, memory, rules, context, CLI config, and greet.
+name: boot
+description: Session startup — gitignore, auto-update, memory, rules, context, CLI config, and greet.
 usedBy: [maestro]
-version: 0.4.3
-lastUpdated: 2026-05-01
+version: 0.5.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -36,32 +37,35 @@ All framework files live under `.agents/`. Markdown references within the framew
      - Re-read `personas/maestro.md` from the top so updated instructions take effect.
    - If already up to date, continue.
 
-3. **Memory.** Load memory (uses: `skills/agent-memory.md`).
+3. **Memory.** Load memory (uses: `skills/agent-memory/SKILL.md`).
 
-4. **CLI configuration.** Run:
+4. **Core skills.** Read the following core skills IN FULL now. These are mandatory for every dispatch and planning decision. Do not skip, summarize, or rely on memory:
+   - `skills/dispatch/SKILL.md` — required for every sub-agent dispatch
+   - `skills/plan-management/SKILL.md` — required for planning decisions and epic tracking
+
+5. **CLI configuration.** Run:
 
    ```bash
-   bash .agents/skills/assets/maestro-boot-configure-cli.sh <your-model-id>
+   bash .agents/skills/assets/maestro-boot-configure-cli.sh
    ```
 
-   Pass your own model ID (e.g., `opencode-go/deepseek-v4-flash`) so the script can resolve the correct provider when multiple providers share the same CLI.
-
-    - If the script outputs `opencode.json created`, inform the user that the file was written and they should restart the session for agent bindings to take effect.
-    - If the script outputs `opencode.json existed`, it means the file was already present and was updated — no restart required.
+    - If the script reports the config was `created` or `updated`, inform the user that agent bindings changed and they should restart the session for the new bindings to take effect.
+    - If the script reports `unchanged`, no action is needed.
     - If `yq` or `jq` is not installed, the script prints a skip message — no action needed.
     - If no supported CLI config file is found, the script exits silently — no action needed.
 
-5. **Load the rules index.** Read `rules/README.md` to know what rules are available and their scopes. Do not read the individual rule files — sub-agents will read them when dispatched.
+6. **Load the rules index.** Read `rules/README.md` to know what rules are available and their scopes. Do not read the individual rule files — sub-agents will read them when dispatched.
 
-6. **Context.** Verify the project has context files. Run:
+7. **Context.** Verify the project has context files. Run:
 
    ```bash
    find . -name ".context.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/vendor/*" -not -path "*/.cache/*" -print -quit
    ```
 
     - If `find` produces no output, no `.context.md` files exist. Dispatch the **Contextualizer** (uses: `personas/contextualizer.md`) before proceeding.
+    - Also check `docs/FEATURE-MAP.md` — if it is missing, the Contextualizer dispatch covers it (uses: `skills/context-maintenance/SKILL.md`).
 
-7. **Greet.** Greet the user and wait for instructions. Remind the user: they are not talking to a single agent — they are talking to a team of specialists that can handle multiple requests simultaneously, so large and complex prompts are welcome.
+8. **Greet.** Greet the user and wait for instructions. Remind the user: they are not talking to a single agent — they are talking to a team of specialists that can handle multiple requests simultaneously, so large and complex prompts are welcome.
 
 ## Guardrails
 

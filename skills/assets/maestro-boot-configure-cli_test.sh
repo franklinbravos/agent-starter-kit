@@ -4,8 +4,8 @@
 # @usage        maestro-boot-configure-cli_test.sh
 # @output       PASS/FAIL per test case, summary at end.
 # @requires     bash v4+, yq v4+, jq v1.6+
-# @version      0.1.5
-# @updated      2026-06-24
+# @version      0.2.0
+# @updated      2026-09-12
 set -euo pipefail
 
 scriptDir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,9 +62,10 @@ setupNoCliConfig() {
   mkdir -p "$testDir/.agents/personas"
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
@@ -78,9 +79,10 @@ setupSkipsReadme() {
   mkdir -p "$testDir/.agents/personas"
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
@@ -101,9 +103,10 @@ setupMergesWithExistingAgents() {
   mkdir -p "$testDir/.agents/personas"
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
@@ -123,17 +126,19 @@ setupReviewerPersona() {
   mkdir -p "$testDir/.agents/personas"
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
   cat > "$testDir/.agents/personas/reviewer.md" <<'EOF'
 ---
+name: reviewer
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Reviews code.
+description: Reviews code.
 ---
 You are a reviewer.
 EOF
@@ -147,22 +152,54 @@ runStandardCases() {
     "configures agents when config exists" \
     setupNoCliConfig \
     "opencode.json: configured 3 persona agent bindings
-configStatus=existed" \
+configStatus=updated" \
     "0"
 
   assertConfigure \
     "skips README persona" \
     setupSkipsReadme \
     "opencode.json: configured 3 persona agent bindings
-configStatus=existed" \
+configStatus=updated" \
     "0"
 
   assertConfigure \
     "merges with existing agents" \
     setupMergesWithExistingAgents \
     "opencode.json: configured 3 persona agent bindings
-configStatus=existed" \
+configStatus=updated" \
     "0"
+}
+
+runIdempotencyCases() {
+  local testDir firstOutput secondOutput
+
+  testDir=$(mktemp -d -p "$fixtureDir")
+  setupNoCliConfig "$testDir"
+
+  firstOutput=$(cd "$testDir" && bash "$configureScript" 2>&1 || true)
+  secondOutput=$(cd "$testDir" && bash "$configureScript" 2>&1 || true)
+
+  if [[ "$firstOutput" != *"configStatus=updated"* ]]; then
+    cat <<EOF
+FAIL first run reports updated
+  expected configStatus=updated, got: $firstOutput
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS first run reports updated"
+  passCount=$((passCount + 1))
+
+  if [[ "$secondOutput" != *"configStatus=unchanged"* ]]; then
+    cat <<EOF
+FAIL second run reports unchanged
+  expected configStatus=unchanged, got: $secondOutput
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS second run reports unchanged"
+  passCount=$((passCount + 1))
 }
 
 runGeneralAgentVerificationCases() {
@@ -193,6 +230,7 @@ runThinkingBudgetVerificationCases() {
   mkdir -p "$testDir/.agents/personas"
   cat > "$testDir/.agents/personas/introvert.md" <<'EOF'
 ---
+name: introvert
 preferredModel: deepseek
 modelTier: tier-2
 humor: introvert
@@ -201,6 +239,7 @@ Quiet persona.
 EOF
   cat > "$testDir/.agents/personas/pragmatic.md" <<'EOF'
 ---
+name: pragmatic
 preferredModel: deepseek
 modelTier: tier-2
 humor: pragmatic
@@ -209,6 +248,7 @@ Direct persona.
 EOF
   cat > "$testDir/.agents/personas/sympathetic.md" <<'EOF'
 ---
+name: sympathetic
 preferredModel: deepseek
 modelTier: tier-2
 humor: sympathetic
@@ -217,6 +257,7 @@ Warm persona.
 EOF
   cat > "$testDir/.agents/personas/extrovert.md" <<'EOF'
 ---
+name: extrovert
 preferredModel: deepseek
 modelTier: tier-2
 humor: extrovert
@@ -225,6 +266,7 @@ Outgoing persona.
 EOF
   cat > "$testDir/.agents/personas/robotic.md" <<'EOF'
 ---
+name: robotic
 preferredModel: deepseek
 modelTier: tier-2
 humor: robotic
@@ -233,6 +275,7 @@ Mechanical persona.
 EOF
   cat > "$testDir/.agents/personas/default.md" <<'EOF'
 ---
+name: default
 preferredModel: deepseek
 modelTier: tier-2
 ---
@@ -247,72 +290,72 @@ EOF
   introvertBudget=$(jq -r '.agent.introvert.thinking.budgetTokens // "missing"' "$testDir/opencode.json")
   introvertEffort=$(jq -r '.agent.introvert.reasoning.effort // "missing"' "$testDir/opencode.json")
   introvertReasoningEffort=$(jq -r '.agent.introvert.reasoningEffort // "missing"' "$testDir/opencode.json")
-  if [[ "$introvertBudget" != "8192" || "$introvertEffort" != "low" || "$introvertReasoningEffort" != "low" ]]; then
+  if [[ "$introvertBudget" != "8192" || "$introvertEffort" != "high" || "$introvertReasoningEffort" != "high" ]]; then
     cat <<EOF
-FAIL introvert thinking budget=8192 effort=low reasoningEffort=low
-  expected budget=8192 effort=low reasoningEffort=low, got: budget=$introvertBudget effort=$introvertEffort reasoningEffort=$introvertReasoningEffort
+FAIL introvert thinking budget=8192 effort=high reasoningEffort=high
+  expected budget=8192 effort=high reasoningEffort=high, got: budget=$introvertBudget effort=$introvertEffort reasoningEffort=$introvertReasoningEffort
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS introvert thinking budget=8192 effort=low reasoningEffort=low"
+  echo "PASS introvert thinking budget=8192 effort=high reasoningEffort=high"
   passCount=$((passCount + 1))
 
   pragmaticBudget=$(jq -r '.agent.pragmatic.thinking.budgetTokens // "missing"' "$testDir/opencode.json")
   pragmaticEffort=$(jq -r '.agent.pragmatic.reasoning.effort // "missing"' "$testDir/opencode.json")
   pragmaticReasoningEffort=$(jq -r '.agent.pragmatic.reasoningEffort // "missing"' "$testDir/opencode.json")
-  if [[ "$pragmaticBudget" != "12288" || "$pragmaticEffort" != "medium" || "$pragmaticReasoningEffort" != "medium" ]]; then
+  if [[ "$pragmaticBudget" != "12288" || "$pragmaticEffort" != "xhigh" || "$pragmaticReasoningEffort" != "xhigh" ]]; then
     cat <<EOF
-FAIL pragmatic thinking budget=12288 effort=medium reasoningEffort=medium
-  expected budget=12288 effort=medium reasoningEffort=medium, got: budget=$pragmaticBudget effort=$pragmaticEffort reasoningEffort=$pragmaticReasoningEffort
+FAIL pragmatic thinking budget=12288 effort=xhigh reasoningEffort=xhigh
+  expected budget=12288 effort=xhigh reasoningEffort=xhigh, got: budget=$pragmaticBudget effort=$pragmaticEffort reasoningEffort=$pragmaticReasoningEffort
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS pragmatic thinking budget=12288 effort=medium reasoningEffort=medium"
+  echo "PASS pragmatic thinking budget=12288 effort=xhigh reasoningEffort=xhigh"
   passCount=$((passCount + 1))
 
   sympatheticBudget=$(jq -r '.agent.sympathetic.thinking.budgetTokens // "missing"' "$testDir/opencode.json")
   sympatheticEffort=$(jq -r '.agent.sympathetic.reasoning.effort // "missing"' "$testDir/opencode.json")
   sympatheticReasoningEffort=$(jq -r '.agent.sympathetic.reasoningEffort // "missing"' "$testDir/opencode.json")
-  if [[ "$sympatheticBudget" != "14336" || "$sympatheticEffort" != "high" || "$sympatheticReasoningEffort" != "high" ]]; then
+  if [[ "$sympatheticBudget" != "14336" || "$sympatheticEffort" != "max" || "$sympatheticReasoningEffort" != "max" ]]; then
     cat <<EOF
-FAIL sympathetic thinking budget=14336 effort=high reasoningEffort=high
-  expected budget=14336 effort=high reasoningEffort=high, got: budget=$sympatheticBudget effort=$sympatheticEffort reasoningEffort=$sympatheticReasoningEffort
+FAIL sympathetic thinking budget=14336 effort=max reasoningEffort=max
+  expected budget=16384 effort=max reasoningEffort=max, got: budget=$sympatheticBudget effort=$sympatheticEffort reasoningEffort=$sympatheticReasoningEffort
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS sympathetic thinking budget=14336 effort=high reasoningEffort=high"
+  echo "PASS sympathetic thinking budget=14336 effort=max reasoningEffort=max"
   passCount=$((passCount + 1))
 
   extrovertBudget=$(jq -r '.agent.extrovert.thinking.budgetTokens // "missing"' "$testDir/opencode.json")
   extrovertEffort=$(jq -r '.agent.extrovert.reasoning.effort // "missing"' "$testDir/opencode.json")
   extrovertReasoningEffort=$(jq -r '.agent.extrovert.reasoningEffort // "missing"' "$testDir/opencode.json")
-  if [[ "$extrovertBudget" != "16384" || "$extrovertEffort" != "xhigh" || "$extrovertReasoningEffort" != "xhigh" ]]; then
+  if [[ "$extrovertBudget" != "16384" || "$extrovertEffort" != "max" || "$extrovertReasoningEffort" != "max" ]]; then
     cat <<EOF
-FAIL extrovert thinking budget=16384 effort=xhigh reasoningEffort=xhigh
-  expected budget=16384 effort=xhigh reasoningEffort=xhigh, got: budget=$extrovertBudget effort=$extrovertEffort reasoningEffort=$extrovertReasoningEffort
+FAIL extrovert thinking budget=16384 effort=max reasoningEffort=max
+  expected budget=16384 effort=max reasoningEffort=max, got: budget=$extrovertBudget effort=$extrovertEffort reasoningEffort=$extrovertReasoningEffort
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS extrovert thinking budget=16384 effort=xhigh reasoningEffort=xhigh"
+  echo "PASS extrovert thinking budget=16384 effort=max reasoningEffort=max"
   passCount=$((passCount + 1))
 
   roboticType=$(jq -r '.agent.robotic.thinking.type // "missing"' "$testDir/opencode.json")
   roboticBudget=$(jq '.agent.robotic.thinking.budgetTokens // "missing"' "$testDir/opencode.json")
   roboticEffort=$(jq -r '.agent.robotic.reasoning.effort // "missing"' "$testDir/opencode.json")
   roboticReasoningEffort=$(jq -r '.agent.robotic.reasoningEffort // "missing"' "$testDir/opencode.json")
-  if [[ "$roboticType" != "enabled" || "$roboticBudget" != "4096" || "$roboticEffort" != "low" || "$roboticReasoningEffort" != "low" ]]; then
+  if [[ "$roboticType" != "enabled" || "$roboticBudget" != "6144" || "$roboticEffort" != "medium" || "$roboticReasoningEffort" != "medium" ]]; then
     cat <<EOF
- FAIL robotic thinking type=enabled budgetTokens=4096 effort=low reasoningEffort=low
-   expected type=enabled budgetTokens=4096 effort=low reasoningEffort=low, got: type=$roboticType budget=$roboticBudget effort=$roboticEffort reasoningEffort=$roboticReasoningEffort
+ FAIL robotic thinking type=enabled budgetTokens=6144 effort=medium reasoningEffort=medium
+   expected type=enabled budgetTokens=6144 effort=medium reasoningEffort=medium, got: type=$roboticType budget=$roboticBudget effort=$roboticEffort reasoningEffort=$roboticReasoningEffort
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS robotic thinking type=enabled budgetTokens=4096 effort=low reasoningEffort=low"
+  echo "PASS robotic thinking type=enabled budgetTokens=6144 effort=medium reasoningEffort=medium"
   passCount=$((passCount + 1))
 
   defaultBudget=$(jq -r '.agent.default.thinking.budgetTokens // "absent"' "$testDir/opencode.json")
@@ -433,6 +476,66 @@ EOF
   fi
   echo "PASS coder agent has permission.bash git rebase * = deny"
   passCount=$((passCount + 1))
+
+  coderGitGlobalFlagDeny=$(jq -r '.agent.coder.permission.bash["git -*"] // "missing"' "$testDir/opencode.json")
+  if [[ "$coderGitGlobalFlagDeny" != "deny" ]]; then
+    cat <<EOF
+FAIL coder agent has permission.bash git -* = deny
+  expected deny, got: $coderGitGlobalFlagDeny
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS coder agent has permission.bash git -* = deny"
+  passCount=$((passCount + 1))
+
+  coderEnvWrapperDeny=$(jq -r '.agent.coder.permission.bash["env *"] // "missing"' "$testDir/opencode.json")
+  if [[ "$coderEnvWrapperDeny" != "deny" ]]; then
+    cat <<EOF
+FAIL coder agent has permission.bash env * = deny
+  expected deny, got: $coderEnvWrapperDeny
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS coder agent has permission.bash env * = deny"
+  passCount=$((passCount + 1))
+
+  coderRmTmpAllow=$(jq -r '.agent.coder.permission.bash["rm /tmp/*"] // "missing"' "$testDir/opencode.json")
+  if [[ "$coderRmTmpAllow" != "allow" ]]; then
+    cat <<EOF
+FAIL coder agent has permission.bash rm /tmp/* = allow
+  expected allow, got: $coderRmTmpAllow
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS coder agent has permission.bash rm /tmp/* = allow"
+  passCount=$((passCount + 1))
+
+  coderFindDeleteDeny=$(jq -r '.agent.coder.permission.bash["find * -delete*"] // "missing"' "$testDir/opencode.json")
+  if [[ "$coderFindDeleteDeny" != "deny" ]]; then
+    cat <<EOF
+FAIL coder agent has permission.bash find * -delete* = deny
+  expected deny, got: $coderFindDeleteDeny
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS coder agent has permission.bash find * -delete* = deny"
+  passCount=$((passCount + 1))
+
+  coderEnvExampleAllow=$(jq -r '.agent.coder.permission.read[".env.example"] // "missing"' "$testDir/opencode.json")
+  if [[ "$coderEnvExampleAllow" != "allow" ]]; then
+    cat <<EOF
+FAIL coder agent has permission.read .env.example = allow
+  expected allow, got: $coderEnvExampleAllow
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS coder agent has permission.read .env.example = allow"
+  passCount=$((passCount + 1))
 }
 
 runExternalDirVerificationCases() {
@@ -443,9 +546,10 @@ runExternalDirVerificationCases() {
   for personaName in build architect coder reviewer contextualizer; do
     cat > "$testDir/.agents/personas/${personaName}.md" <<EOF
 ---
+name: ${personaName}
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: ${personaName} persona.
+description: ${personaName} persona.
 ---
 ${personaName} body.
 EOF
@@ -559,17 +663,18 @@ EOF
   passCount=$((passCount + 1))
 }
 
-runHostProviderResolutionCases() {
-  local testDir resolvedModel
+runHostModelOmissionCases() {
+  local testDir hostModel hostDescription
 
   testDir=$(mktemp -d -p "$fixtureDir")
   mkdir -p "$testDir/.agents/personas"
 
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: host
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
@@ -578,23 +683,90 @@ EOF
 {}
 EOF
 
-  # resolveHostProviderName queries dispatch.md for the provider whose cli == "opencode".
-  # The env override bypasses that lookup and forces the provider name directly.
-  # Setting it to "deepseek" exercises the resolution path because dispatch.md maps
-  # deepseek -> cli: opencode, tier-2 -> opencode-go/deepseek-v4-flash.
-  cd "$testDir" && isRunningInsideSupportedCliEnvOverride=true resolveHostProviderNameEnvOverride=deepseek bash "$configureScript" 2>&1 || true
+  cd "$testDir" && isRunningInsideSupportedCliEnvOverride=true bash "$configureScript" 2>&1 || true
 
-  resolvedModel=$(jq -r '.agent.coder.model' "$testDir/opencode.json")
+  hostModel=$(jq -r '.agent.coder.model // "absent"' "$testDir/opencode.json")
+  hostDescription=$(jq -r '.agent.coder.description // "absent"' "$testDir/opencode.json")
 
-  if [[ "$resolvedModel" != *"deepseek"* ]]; then
+  if [[ "$hostModel" != "absent" ]]; then
     cat <<EOF
-FAIL host provider resolves to deepseek tier-2 model
-  expected model to contain 'deepseek', got: $resolvedModel
+FAIL host persona binding omits the model field
+  expected no model field, got: $hostModel
 EOF
     failCount=$((failCount + 1))
     return
   fi
-  echo "PASS host provider resolves to deepseek tier-2 model"
+  echo "PASS host persona binding omits the model field"
+  passCount=$((passCount + 1))
+
+  if [[ "$hostDescription" != "Software development." ]]; then
+    cat <<EOF
+FAIL host persona binding keeps the description
+  expected 'Software development.', got: $hostDescription
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS host persona binding keeps the description"
+  passCount=$((passCount + 1))
+}
+
+runVisibilityProfileCases() {
+  local testDir buildMode coderMode coderHidden
+
+  testDir=$(mktemp -d -p "$fixtureDir")
+  mkdir -p "$testDir/.agents/personas"
+
+  cat > "$testDir/.agents/personas/maestro.md" <<'EOF'
+---
+name: maestro
+preferredModel: host
+modelTier: tier-3
+description: Conductor.
+---
+You are the maestro.
+EOF
+
+  cat > "$testDir/.agents/personas/coder.md" <<'EOF'
+---
+name: coder
+preferredModel: host
+modelTier: tier-2
+description: Software development.
+---
+You are a coder.
+EOF
+
+  cat > "$testDir/opencode.json" <<'EOF'
+{}
+EOF
+
+  cd "$testDir" && isRunningInsideSupportedCliEnvOverride=true bash "$configureScript" 2>&1 || true
+
+  buildMode=$(jq -r '.agent.build.mode // "missing"' "$testDir/opencode.json")
+  coderMode=$(jq -r '.agent.coder.mode // "missing"' "$testDir/opencode.json")
+  coderHidden=$(jq -r '.agent.coder.hidden // "missing"' "$testDir/opencode.json")
+
+  if [[ "$buildMode" != "primary" ]]; then
+    cat <<EOF
+FAIL build agent is the visible primary agent
+  expected mode=primary, got: $buildMode
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS build agent is the visible primary agent"
+  passCount=$((passCount + 1))
+
+  if [[ "$coderMode" != "subagent" || "$coderHidden" != "true" ]]; then
+    cat <<EOF
+FAIL non-build agents are hidden subagents
+  expected mode=subagent hidden=true, got: mode=$coderMode hidden=$coderHidden
+EOF
+    failCount=$((failCount + 1))
+    return
+  fi
+  echo "PASS non-build agents are hidden subagents"
   passCount=$((passCount + 1))
 }
 
@@ -606,18 +778,20 @@ runUnsupportedProviderSkippedCases() {
 
   cat > "$testDir/.agents/personas/unknown.md" <<'EOF'
 ---
+name: unknown
 preferredModel: unknown-provider
 modelTier: tier-2
-shortDescription: Unknown provider persona.
+description: Unknown provider persona.
 ---
 Unknown provider body.
 EOF
 
   cat > "$testDir/.agents/personas/coder.md" <<'EOF'
 ---
+name: coder
 preferredModel: deepseek
 modelTier: tier-2
-shortDescription: Software development.
+description: Software development.
 ---
 You are a coder.
 EOF
@@ -649,12 +823,14 @@ printResults() {
 }
 
 runStandardCases
+runIdempotencyCases
 runGeneralAgentVerificationCases
 runThinkingBudgetVerificationCases
 runPermissionVerificationCases
 runExternalDirVerificationCases
 runPlanDisableVerificationCases
 runDependencyCheckVerificationCases
-runHostProviderResolutionCases
+runHostModelOmissionCases
+runVisibilityProfileCases
 runUnsupportedProviderSkippedCases
 printResults

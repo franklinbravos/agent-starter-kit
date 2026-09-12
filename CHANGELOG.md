@@ -1,6 +1,37 @@
 # Changelog
 
 ```log
+1.0.0 - 2026/09/12
+feat(personas): add name frontmatter and rename shortDescription to description — schema 0.3.0
+fix(configure-cli): read persona description field — readPersonaDescription replaces readPersonaShortDescription
+feat(skills): donate grill protocol — grill, plan-management, architect-design-tree, architect-impl-grounding
+refactor(personas): architect owns tree/ground/refresh modes; maestro runs grill → ground → review gate → per-epic dispatch
+refactor(personas): coder implements one epic per dispatch from impl.md; reviewer adversarial validates grill artifacts
+refactor(skills): review-loop is two-mode — single reviewer per epic, three reviewers for full branch
+drop(skills): architect-self-review — superseded by grill checkpoints and the adversarial artifact review
+feat(skills): donate web-search — TinyFish CLI search and fetch with install and auth verification
+feat(skills): donate browser-inspect — agent-browser and Chrome DevTools MCP with install verification
+feat(configure-cli): allow read-only tinyfish search, fetch, and auth-status commands
+refactor(skills): flatten to name/SKILL.md layout with name+description frontmatter per runtime discovery contract
+refactor(agents): sync AGENTS.md with main framework — override contract, STE-100, shell and disposal rules, verification audit, review guidance; skill paths to SKILL.md layout
+refactor(rules): code/general de-opinionated to the pre-sync baseline — drops nesting, string matching, code formatting, lint-on-edit, accessibility, extra naming rules, and the test intent-comment mandate; restores the test-data factories rule; keeps STE-100 and the softened comments stance
+feat(rules): rename code/quality to code/general and sync with main framework 0.5.x — naming, method ordering, visible assignment, error tolerability, comments test
+feat(rules): add code/shell — headers, strictness, structure, pipelines, parser discipline, companion tests
+feat(rules): add reviewing — tooling trust boundary, file creation prohibition, dispatch sizing
+feat(rules): add context-maintenance enforcement rule
+feat(rules): sync git — repo-root git, no global flags, schema callout, squash/rebase ban, logical change scoping
+refactor(personas): maestro gains hallucination red line, stress-test step, CHANGELOG pre-commit step; coder humor to introvert, FEATURE-MAP step, Discovered Issues handoff
+refactor(personas): reviewer identity sync; contextualizer gains LOC command and yield thresholds; README schema sync
+feat(skills): code-sec-review rewritten as researcher methodology — ranked targets, regressions, tenant isolation, revalidation, chains
+refactor(skills): self-review rubrics gain gather-evidence step and scorecard format; SHIELD aligns with security phase model
+refactor(skills): dispatch gains task-context step, preload block, parallel-dispatch cap; boot gains FEATURE-MAP check and config-change reboot status
+refactor(skills): review-loop gains hallucination-cause classification and missing-findings spot-check
+feat(skills): donate context-scan-directories.sh with companion test
+feat(configure-cli): host personas omit model field and follow live TUI selection; build primary, others hidden subagents
+feat(configure-cli): change detection reports created/updated/unchanged; effort ladder robotic=medium to extrovert=max
+fix(configure-cli): deny git -*, env *, find -delete; allow rm on literal /tmp paths and .env.example reads
+docs(readme): MoE thinking cap 16,384; AGENTS.override.md customization note
+
 0.9.9 - 2026/07/24
 refactor(agents): add audience-directive block to Readability Over Performance — frame the compiler as syntax validator (already solved) and the 3am stranger as the audience; rewrite Comments Are a Signal as confession-not-tool with restructure-first default and demonstrate-the-attempt requirement; widen Locality of Behavior to cover sole-caller helpers (nested when trivial wrapping, method on same type when real transformation logic); reframe Naming preamble to restructure-before-comment
 feat(agents): add Honesty and Ambiguity section — say so when a request is flawed, proceed on reversible actions, stop only for destructive/irreversible, escalate with structure for non-obvious trade-offs

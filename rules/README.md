@@ -4,15 +4,18 @@ Rules are constraints — short, direct, and non-procedural. A rule that needs m
 
 ## Available Rules
 
-- **`code/quality`** — Universal naming, testing, and quality conventions (coding)
+- **`code/general`** — Universal naming, style, comments, and testing conventions (coding)
+- **`code/shell`** — Shell script readability, safety, and determinism (coding)
 - **`code/debugging`** — Root cause before fix, three-strike rule, anti-rationalization (coding)
 - **`git`** — Conventional commits, branch naming, commit style (coding)
+- **`context-maintenance`** — .context.md and FEATURE-MAP.md updates on structural changes (coding)
+- **`reviewing`** — Review dispatch sizing, file creation prohibition, tooling trust boundaries (reviewing)
 
 ## File Naming
 
-Lowercase, hyphenated. Scoped rules are prefixed with the persona or domain they target: `coder-formatting.md`, not `formatting.md`. Universal rules carry no prefix.
+Lowercase, hyphenated. Coding-scoped rules live in the `code/` subdirectory: `code/general.md`. Universal rules sit at the root: `git.md`, `reviewing.md`.
 
-## Schema (v0.2.0 // 2026-07-09)
+## Schema (v0.2.0 // 2026-09-12)
 
 ### Frontmatter
 

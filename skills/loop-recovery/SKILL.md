@@ -1,8 +1,9 @@
 ---
-shortDescription: Structured recovery and escalation when an agent hits a retry loop.
+name: loop-recovery
+description: Structured recovery and escalation when an agent hits a retry loop.
 usedBy: [all]
-version: 0.0.1
-lastUpdated: 2026-03-25
+version: 0.0.3
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -30,7 +31,7 @@ When an agent has repeated the same failing action three times, it needs a concr
 
 ## Guardrails
 
-- Never attempt a third approach. Two failed approaches is strong evidence that the problem requires human judgment or context the agent does not have.
+- Never attempt a third approach. Two failed approaches show the problem needs human judgment or context the agent lacks.
 - Never retry with debug commands, additional logging, or exploratory reads unless the new information would change the approach — not merely confirm the same failure.
 - Never continue after detecting oscillation twice. An A→B→A→B cycle means the two approaches are undoing each other — a third attempt will repeat the pattern.
 - Never treat drift (touching unrelated files) as progress. If the last action modified files outside the task scope, revert it before proceeding.
