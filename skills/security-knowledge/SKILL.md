@@ -1,9 +1,10 @@
 ---
-shortDescription: Continuous security intelligence — read, refresh, and grow the knowledge base each engagement.
+name: security-knowledge
+description: Continuous security intelligence — read, refresh, and grow the knowledge base each engagement.
 usedBy: [secops-engineer, secops-manager]
 relatedTo: [nvd, cisa-kev, sansec]
-version: 0.1.0
-lastUpdated: 2026-09-11
+version: 0.2.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose

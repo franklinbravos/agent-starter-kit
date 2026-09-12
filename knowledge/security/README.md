@@ -13,4 +13,4 @@ Durable, engagement-independent security intelligence. This is how the SecOps ag
 
 - Never store client secrets, tokens, credentials, or personal data here. This file is versioned with the agent.
 - Record only what was verified. Rumor, unconfirmed claims, and vendor silence are marked as such.
-- This base is read at the start of every engagement and written at the end of every engagement (`skills/security-knowledge.md`).
+- This base is read at the start of every engagement and written at the end of every engagement (`skills/security-knowledge/SKILL.md`).

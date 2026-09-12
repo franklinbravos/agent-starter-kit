@@ -1,8 +1,9 @@
 ---
-shortDescription: Deterministic self-evaluation rubric for the SecOps Manager — scored every run using CLEAR.
+name: secops-manager-self-review
+description: Deterministic self-evaluation rubric for the SecOps Manager — scored every run using CLEAR.
 usedBy: [secops-manager]
-version: 0.1.0
-lastUpdated: 2026-09-11
+version: 0.2.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose

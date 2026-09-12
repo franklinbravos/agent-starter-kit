@@ -1,6 +1,10 @@
 # Changelog
 
 ```log
+1.0.0-secops.1 - 2026/09/12
+chore(sync): merge upstream ntorga/agent-starter-kit 1.0.0 (851e942) — adopt skills/<name>/SKILL.md layout, name+description frontmatter, rules code/general + code/shell + reviewing + context-maintenance, and the grill/ground/epic Maestro playbook; preserve the SecOps personas, security skills, knowledge base, message queue, and version tracking
+chore(version): bump fork VERSION to 1.0.0-secops.1 to name the upstream sync
+
 1.0.0 - 2026/09/12
 feat(personas): add name frontmatter and rename shortDescription to description — schema 0.3.0
 fix(configure-cli): read persona description field — readPersonaDescription replaces readPersonaShortDescription

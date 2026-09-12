@@ -1,8 +1,9 @@
 ---
-shortDescription: Kolivo security report standard — technical and management HTML, reproducible from zero.
+name: security-report
+description: Kolivo security report standard — technical and management HTML, reproducible from zero.
 usedBy: [secops-engineer, secops-manager]
-version: 0.2.0
-lastUpdated: 2026-09-11
+version: 0.3.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -32,7 +33,7 @@ An assessment is only as good as the document that carries it. This skill is the
 
 5. **Zero-day convention.** When a finding is a zero-day — a flaw exploited before an official fix exists — render, in **both** reports, a dedicated callout explaining the concept (the vendor had "zero days" to prepare; no fix or ready defense exists when exploitation begins; it typically needs no password, account, or user action; until the hotfix, containment and isolation are the only options) and tag the finding with a red **ZERO-DAY** badge. A zero-day in active exploitation is always `crítico`.
 
-6. **Severity scale.** Use the same five levels in both reports: `crítico`, `alto`, `médio`, `baixo`, `info` (definitions in `skills/security-assessment.md`). A finding's severity is identical in every artifact.
+6. **Severity scale.** Use the same five levels in both reports: `crítico`, `alto`, `médio`, `baixo`, `info` (definitions in `skills/security-assessment/SKILL.md`). A finding's severity is identical in every artifact.
 
 7. **Integrity statement.** The methodology section states the method and limits: read-only or authorized-active, **0 data altered**, no accounts created, no credentials submitted, no third-party systems touched, and what remains unconfirmed without credentials or authorization. The management report carries a gate making clear the technical detail and exploitation live in the contracted engagement.
 

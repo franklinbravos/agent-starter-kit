@@ -1,8 +1,9 @@
 ---
-shortDescription: File-based FIFO message queue for deferring user input during mid-task dispatch.
+name: message-queue
+description: File-based FIFO message queue for deferring user input during mid-task dispatch.
 usedBy: [maestro]
-version: 0.1.0
-lastUpdated: 2026-07-19
+version: 0.2.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose

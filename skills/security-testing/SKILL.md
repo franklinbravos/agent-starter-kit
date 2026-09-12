@@ -1,9 +1,10 @@
 ---
-shortDescription: Active security testing catalog — per-mode checklists and controlled-exploitation discipline.
+name: security-testing
+description: Active security testing catalog — per-mode checklists and controlled-exploitation discipline.
 usedBy: [secops-engineer]
 relatedTo: [burp, nuclei, ffuf, sqlmap, mitmproxy]
-version: 0.1.0
-lastUpdated: 2026-09-11
+version: 0.2.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose
@@ -12,7 +13,7 @@ Reconnaissance finds the surface; testing finds the flaws. This skill is the cat
 
 ## Procedure
 
-1. **Confirm authorization for the specific action.** Every active test starts by checking the scope gate from `skills/security-assessment.md`: the asset is in scope, the action is permitted by the rules of engagement, and the window covers now. When unsure, stop — an unauthorized request is a legal event, not a finding.
+1. **Confirm authorization for the specific action.** Every active test starts by checking the scope gate from `skills/security-assessment/SKILL.md`: the asset is in scope, the action is permitted by the rules of engagement, and the window covers now. When unsure, stop — an unauthorized request is a legal event, not a finding.
 
 2. **Web application (OWASP Top 10 / WSTG).** Test, as the mode allows:
    - **Injection** — SQL/NoSQL, OS command, LDAP, template (SSTI), XPath; trace untrusted input to each sink.

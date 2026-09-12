@@ -1,8 +1,9 @@
 ---
-shortDescription: Deterministic self-evaluation rubric for the SecOps Engineer — scored every run using PROOF.
+name: secops-engineer-self-review
+description: Deterministic self-evaluation rubric for the SecOps Engineer — scored every run using PROOF.
 usedBy: [secops-engineer]
-version: 0.1.0
-lastUpdated: 2026-09-11
+version: 0.2.0
+lastUpdated: 2026-09-12
 ---
 
 ## Purpose

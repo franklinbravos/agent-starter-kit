@@ -12,14 +12,14 @@ mesmas em todos os projetos. A **memória** e os **artefatos** são deste projet
 
 1. Leia `.agents/VERSION` para confirmar a versão do agente.
 2. Leia e siga **integralmente** `.agents/personas/maestro.md` e execute a
-   sequência de boot em `.agents/skills/boot.md` (gitignore, pull do agente,
+   sequência de boot em `.agents/skills/boot/SKILL.md` (gitignore, pull do agente,
    memória, regras, contexto e saudação).
    - O Maestro orquestra **todas as personas** em `.agents/personas/` — por
      exemplo `secops-engineer`, `secops-manager`, `architect`, `coder`,
      `reviewer`, `contextualizer` — e usa as skills em `.agents/skills/`.
 3. Carregue o contexto **deste projeto** antes de agir:
    - **Memória:** `.memory/long-term.md` e os arquivos em `.memory/session/`
-     (se existirem). Use `skills/agent-memory.md`.
+     (se existirem). Use `skills/agent-memory/SKILL.md`.
    - **Artefatos do engagement:** todos os relatórios e evidências na raiz do
      projeto e subpastas — `*security-report*.html`,
      `*relatorio-gerencial*.html`, `recon-fase-*.md`, CSVs de superfície,
