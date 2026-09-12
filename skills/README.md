@@ -16,10 +16,17 @@ Skills are collected intelligence on how to operate a specific tool — whether 
 - `contextualizer-self-review` — TRACE self-review rubric — context generation quality gate
 - `dispatch` — Assembles sub-agent prompts with task brief
 - `loop-recovery` — Structured recovery and escalation for retry loops
+- `message-queue` — File-based FIFO queue for deferring user input during mid-task dispatch
 - `reviewer-architect-adversarial` — Adversarial plan validation — structural checks and assumption attack before implementation
 - `reviewer-handoff` — Structured review summary format with verdict logic and deterministic coverage scoring
 - `review-loop` — LOC-based review tier selection with shapeshifter dispatch for the unified reviewer
 - `reviewer-self-review` — SHIELD self-review rubric — unified reviewer quality gate
+- `secops-engineer-self-review` — PROOF self-review rubric — technical assessment quality gate
+- `secops-manager-self-review` — CLEAR self-review rubric — management report quality gate
+- `security-assessment` — Engagement methodology — scope gate, black/gray/white-box, full lifecycle
+- `security-knowledge` — Continuous security intelligence — read, refresh, and grow the knowledge base
+- `security-report` — Kolivo report standard — technical and management HTML, reproducible from zero
+- `security-testing` — Active testing catalog — per-mode checklists and controlled-exploitation discipline
 - `task-tracking` — File-based to-do tracking for multi-step and multi-session work
 
 ## When to Extract a Skill

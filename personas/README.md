@@ -9,6 +9,8 @@ Personas are specialized AI roles. Role-playing matters. Different perspectives 
 - **coder** — Software development
 - **reviewer** — Reviews work output for quality
 - **contextualizer** — Rebuilds .context.md files
+- **secops-engineer** — Hands-on security testing, findings, technical report
+- **secops-manager** — Business risk, management reporting, proposals
 
 ## Execution Model
 

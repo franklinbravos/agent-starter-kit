@@ -32,10 +32,31 @@ The framework **learns as it works**. Corrections, preferences, and lessons are 
 
    ```bash
    cd /path/to/your/project
-   git clone git@github.com:ntorga/agent-starter-kit.git .agents
+   git clone git@github.com:franklinbravos/agent-starter-kit.git .agents
    ```
 
 The `.agents/` directory lives inside your project — it's not a plugin you install once. Each project gets its own copy of the framework.
+
+### Why this fork?
+
+This fork extends the original [ntorga/agent-starter-kit](https://github.com/ntorga/agent-starter-kit) with a **message queue system** that makes the Maestro resilient to user messages sent while it is mid-task. The original kit processes messages synchronously — anything you type while the agent is waiting for a sub-agent corrupts the session. This fork adds a FIFO queue (`.agents/skills/message-queue.md`) that defers non-urgent messages and handles `/force` interruptions cleanly.
+
+Differences from upstream:
+- **`skills/message-queue.md`** — file-based FIFO queue with mid-task semaphore, collation-resistant naming, `/force` command support, and stress-tested edge cases
+- **`personas/maestro.md`** — updated playbook with queue-aware steps 0 (check), 5 (mark), 7 (clear), 8 (sweep)
+- **`skills/boot.md`** — initializes `.memory/queue/` during session startup
+- **`skills/agent-memory.md`** — logs queue events to session memory
+
+To keep this fork in sync with upstream (the merge preserves the fork additions):
+```bash
+git remote add upstream https://github.com/ntorga/agent-starter-kit.git
+git fetch upstream
+git merge upstream/main --no-ff
+# Resolve any conflicts if they arise — fork-side changes (message queue,
+# version tracking, fork attribution) take precedence; never drop them.
+```
+
+After merging, record the sync in the same logical change: add a `chore(sync)` entry to `CHANGELOG.md` and bump `VERSION` (plus `forkVersion` in `ENTRYPOINT.md`) — the fork's version tracking and boot upstream check depend on those being in step.
 
 2. Symlink the entry file to the project root:
 
@@ -74,6 +95,7 @@ If the tools aren't installed or you're using a different CLI, the script exits 
 personas/    Specialized AI roles (who does the work)
 rules/       Constraints
 skills/      Reusable procedures and protocols
+knowledge/   Continuous security intelligence (SecOps)
 ```
 
 ## Skills
@@ -92,10 +114,17 @@ Skills codify procedures that personas reference. They answer "how to do X" so p
 - **contextualizer-self-review** — TRACE self-review rubric — context generation quality gate
 - **dispatch** — how the Maestro assembles and sends work to personas
 - **loop-recovery** — structured recovery and escalation for retry loops
+- **message-queue** — file-based FIFO queue for deferring user input during mid-task dispatch
 - **review-loop** — LOC-based review tier selection with shapeshifter dispatch
 - **reviewer-architect-adversarial** — adversarial plan validation and assumption attack
 - **reviewer-handoff** — structured review summary format with verdict logic
 - **reviewer-self-review** — SHIELD self-review rubric — unified reviewer quality gate
+- **secops-engineer-self-review** — PROOF self-review rubric — technical assessment quality gate
+- **secops-manager-self-review** — CLEAR self-review rubric — management report quality gate
+- **security-assessment** — engagement methodology — scope gate, black/gray/white-box, full lifecycle
+- **security-knowledge** — continuous security intelligence — read, refresh, and grow the knowledge base
+- **security-report** — Kolivo report standard — technical and management reports, reproducible from zero
+- **security-testing** — active testing catalog — per-mode checklists and controlled-exploitation discipline
 - **task-tracking** — file-based to-do for multi-step work
 
 ## Customization

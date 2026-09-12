@@ -144,6 +144,7 @@ Refactor auth module into a separate package.
 **Schema notes:**
 
 - **Status** is `in-progress`, `paused`, or `done`.
+- **Queue events** use actor `[maestro]` and follow the pattern `Queued message: "<preview>"` or `Processed queued message: "<preview>"`, where `<preview>` is the first 80 characters of the message. The Maestro records these when it enqueues or dequeues a message (uses: `skills/message-queue.md`).
 - **Active Todo** records the path to the current todo file (uses: `skills/task-tracking.md`). When resuming a paused session, the Maestro must read this file and relay its unchecked items to the sub-agent so work picks up where it stopped. Omit the section entirely when no todo exists. Clear it when the todo is closed.
 - **Log** is append-only within a session. Each entry is a single line.
 - **Keep entries concise.** Record only what matters for resuming: what was requested, what was dispatched, what was delivered, and what decisions were made. Skip intermediate chatter, routine acknowledgements, and details that can be recovered from the code or commit history. The log is a breadcrumb trail, not a transcript.
