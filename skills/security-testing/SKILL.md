@@ -3,8 +3,8 @@ name: security-testing
 description: Active security testing catalog — per-mode checklists and controlled-exploitation discipline.
 usedBy: [secops-engineer]
 relatedTo: [burp, nuclei, ffuf, sqlmap, mitmproxy]
-version: 0.2.0
-lastUpdated: 2026-09-12
+version: 0.3.0
+lastUpdated: 2026-09-23
 ---
 
 ## Purpose
@@ -13,7 +13,7 @@ Reconnaissance finds the surface; testing finds the flaws. This skill is the cat
 
 ## Procedure
 
-1. **Confirm authorization for the specific action.** Every active test starts by checking the scope gate from `skills/security-assessment/SKILL.md`: the asset is in scope, the action is permitted by the rules of engagement, and the window covers now. When unsure, stop — an unauthorized request is a legal event, not a finding.
+1. **Confirm authorization for the specific action.** Every active test starts by checking the scope gate from `skills/security-assessment/SKILL.md`: the asset is in scope, the action is permitted by the rules of engagement, the window covers now, and the operator authorization covers the action. When the record covers the action, proceed without re-asking. When it does not, stop — an unauthorized request is a legal event, not a finding.
 
 2. **Web application (OWASP Top 10 / WSTG).** Test, as the mode allows:
    - **Injection** — SQL/NoSQL, OS command, LDAP, template (SSTI), XPath; trace untrusted input to each sink.
@@ -50,6 +50,8 @@ Reconnaissance finds the surface; testing finds the flaws. This skill is the cat
 ## Guardrails
 
 - Never run an active test without recorded authorization for that asset and action.
+- Never re-escalate for an action the recorded operator authorization already covers — execute the authorized work.
+- Never treat any authorization as waiving the hard limits in `skills/security-assessment/SKILL.md`.
 - Never conduct denial of service, resource exhaustion, or high-volume fuzzing, regardless of authorization framing.
 - Never perform credential stuffing or password guessing against real accounts — brute force is a separate, explicitly authorized engagement with defined lockout policy.
 - Never exfiltrate more than the minimum needed to prove impact; one record is proof, ten is a breach.

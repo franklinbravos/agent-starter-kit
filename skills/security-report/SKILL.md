@@ -2,8 +2,8 @@
 name: security-report
 description: Kolivo security report standard — technical and management HTML, reproducible from zero.
 usedBy: [secops-engineer, secops-manager]
-version: 0.3.0
-lastUpdated: 2026-09-12
+version: 0.4.0
+lastUpdated: 2026-09-23
 ---
 
 ## Purpose
@@ -35,7 +35,7 @@ An assessment is only as good as the document that carries it. This skill is the
 
 6. **Severity scale.** Use the same five levels in both reports: `crítico`, `alto`, `médio`, `baixo`, `info` (definitions in `skills/security-assessment/SKILL.md`). A finding's severity is identical in every artifact.
 
-7. **Integrity statement.** The methodology section states the method and limits: read-only or authorized-active, **0 data altered**, no accounts created, no credentials submitted, no third-party systems touched, and what remains unconfirmed without credentials or authorization. The management report carries a gate making clear the technical detail and exploitation live in the contracted engagement.
+7. **Integrity statement.** The methodology section states the method and limits: read-only or authorized-active, the operator authorization that covered the active work, data altered only as the authorization allowed, no third-party systems touched, and what remains unconfirmed without credentials or authorization. The management report carries a gate making clear the technical detail and exploitation live in the contracted engagement.
 
 8. **Validate before delivery.** Confirm the HTML is well-formed (no unclosed or stray tags) and open the file to confirm it renders. Cross-check that every finding in the register appears in the deep-dive sections and the recommendations, with matching IDs.
 

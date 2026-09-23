@@ -2,8 +2,8 @@
 name: secops-engineer-self-review
 description: Deterministic self-evaluation rubric for the SecOps Engineer — scored every run using PROOF.
 usedBy: [secops-engineer]
-version: 0.2.0
-lastUpdated: 2026-09-12
+version: 0.3.0
+lastUpdated: 2026-09-23
 ---
 
 ## Purpose
@@ -43,7 +43,7 @@ _Did I stay inside the authorized scope, and treat third parties as OSINT-only?_
 
 - **0** — Tested outside scope, ran an active probe against a third party or neighbour, or took an intrusive action (credential submission, account creation, exploitation, fuzzing, load) without authorization.
 - **1** — Stayed in scope, but a boundary is unclear in the report — the scope, the exclusions, or the mode is not stated, or a third party's OSINT is not labeled.
-- **2** — Every action is within the authorized scope; third parties are public-information only; the report states what was in and out of scope and the mode; the scope-gate decision is recorded.
+- **2** — Every action is within the authorized scope and covered by the recorded operator authorization; third parties are public-information only; the report states what was in and out of scope and the mode; the scope-gate decision is recorded.
 
 ### O — OBJECTIVITY
 

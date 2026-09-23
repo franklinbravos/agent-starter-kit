@@ -1,6 +1,12 @@
 # Changelog
 
 ```log
+1.0.0-secops.3 - 2026/09/23
+feat(security): add the operator-authorization gate — a recorded operator grant, resting on the client authorization, unlocks authorized active work without per-step escalation; four hard limits stay non-waivable (third-party assets, denial of service, bulk exfiltration, real-account brute force)
+refactor(skills): security-assessment defines the authorization record and the hard limits; security-testing and the SecOps Engineer execute covered actions without re-asking
+refactor(skills): PROOF Ownership credits authorized active work covered by the operator grant; security-report integrity statement records the covering authorization
+chore(version): bump fork VERSION to 1.0.0-secops.3
+
 1.0.0-secops.2 - 2026/09/17
 chore(knowledge): generalize client-identifying tokens in the global security knowledge base — replace client domains, storage buckets, upload paths, RPC argument names, and decommissioned subdomains with reusable platform-level phrasing; no intelligence lost
 chore(version): bump fork VERSION to 1.0.0-secops.2
